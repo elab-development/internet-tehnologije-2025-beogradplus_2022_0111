@@ -17,7 +17,7 @@ export interface Stanica {
   naziv: string;
   lat: number;
   lng: number;
-  zona: string;
+  aktivna: boolean;
 }
 
 export interface Linija {
