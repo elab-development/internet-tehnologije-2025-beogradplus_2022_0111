@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-export default function Map({visina = '400px', sirina='100%',zoom = 12.4}) {
+export default function Map({visina = '400px', sirina='100%',zoom = 13}) {
   return (
 <div style={{ height: visina, width: sirina }}>
           <MapContainer scrollWheelZoom = {true}
