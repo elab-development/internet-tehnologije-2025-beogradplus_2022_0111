@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 
-export default function Linkbtn({ href = "", label = "", className = "" }) {
+export default function Linkbtn({ href = "", label = "", className = "", style = {} }) {
   const finalClass = className || "nav-link text-white w-100 mb-3";
   return (
     <Link

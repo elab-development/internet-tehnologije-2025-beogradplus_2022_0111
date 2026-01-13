@@ -69,7 +69,7 @@ export default function Searchbar() {
       ref={searchRef}
       style={{
         position: "relative",
-        width: 400,
+        width: 350,
         margin: "20px auto",
         zIndex: 9999
       }}

@@ -72,7 +72,7 @@ export default function AboutUs() {
                   margin: "0 auto",
                   lineHeight: "1.6"
                 }}>
-                  Vaš pouzdan saputnik u navigaciji kroz Beograd. Pratite javni prevoz u realnom vremenu i planirajte putovanje bez stresa.
+                  Vaš pouzdan saputnik u navigaciji kroz Beograd. Pratite javni prevoz u svakom trenutku i planirajte putovanje bez stresa.
                 </p>
               </div>
             </div>
@@ -82,7 +82,7 @@ export default function AboutUs() {
                 <Bubble padding="md" opacity={0.7} className="text-center">
                   <h2 className="h3 fw-bold mb-3 text-dark">Naša Misija</h2>
                   <p className="mb-0 text-dark fs-5">
-                    BeoGradPlus je kreiran da pojednostavi svakodnevno korišćenje gradskog prevoza. Sve linije, stanice i rute – jasno, brzo i pouzdano.
+                    BeogradPlus je kreiran da pojednostavi svakodnevno korišćenje gradskog prevoza. Sve linije, stanice i rute – jasno, brzo i pouzdano.
                   </p>
                 </Bubble>
               </div>
@@ -133,7 +133,7 @@ export default function AboutUs() {
             <div className="row justify-content-center mb-5">
               <div className="col-lg-10">
                 <Bubble padding="lg" opacity={0.7}>
-                  <h2 className="h3 fw-bold mb-4 text-center text-dark">Kako Funkcioniše</h2>
+                  <h2 className="h3 fw-bold mb-4 text-center text-dark">Kako funkcioniše</h2>
                   <div className="row g-4 justify-content-center">
                     {[
                       { n: 1, title: 'Pretražite', text: 'Pronađite stanicu ili liniju.' },
@@ -164,13 +164,13 @@ export default function AboutUs() {
             </div>
 
             <div className="row mb-5">
-              <div className="col-12" style={{ height: "100px" }}></div>
+              <div className="col-12" style={{ height: "0px" }}></div>
             </div>
 
             <div className="row justify-content-center">
               <div className="col-lg-8 text-center">
                 <Bubble padding="lg" opacity={0.7}>
-                  <h3 className="fw-bold mb-3 text-dark">Kreirano za Beograđane</h3>
+                  <h3 className="fw-bold mb-3 text-dark">Kreirano za sve koji zive u Beogradu</h3>
                   <p className="mb-4 text-secondary fs-5">
                     Fokusirano na realne potrebe svakodnevnog kretanja kroz grad.
                   </p>
