@@ -16,12 +16,12 @@ const Map = dynamic(donesiMapu, { ssr: false });
 export default function Home() {
   const router = useRouter();
 
-  useEffect(() => {
-    const auth = localStorage.getItem("auth");
-    if (!auth) {
-      router.push("/login");
-    }
-  }, [router]);
+  // useEffect(() => {
+  //   const auth = sessionStorage.getItem("auth");
+  //   if (!auth) {
+  //     router.push("/login");
+  //   }
+  // }, [router]);
 
   return (
     <div style={{ height: "100vh", width: "100vw", display: "flex" }}>
