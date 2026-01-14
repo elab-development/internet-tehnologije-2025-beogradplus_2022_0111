@@ -1,7 +1,11 @@
 'use client'
-import Linkbtn from './linkbtn'
+import { useState, useRef } from 'react';
+import PopupKorisnik from './popupkorisnik';
 
 export default function Sidebar() {
+    const [isPopupOpen, setIsPopupOpen] = useState(false);
+    const korisnikButtonRef = useRef<HTMLDivElement>(null);
+
     return (
         <aside style={{
             display: "flex",
@@ -20,50 +24,76 @@ export default function Sidebar() {
                 width: "100%",
                 gap: "0.75rem"
             }}>
-                <Linkbtn 
-                    href="/" 
-                    label="Početna" 
+                <div
+                    onClick={() => window.location.href = '/'}
                     style={{
                         color: "#fff",
-                        textDecoration: "none",
-                        padding: "0.75rem 1rem",
+                        padding: "0.5rem 0.75rem",
                         borderRadius: "8px",
                         transition: "all 0.2s ease",
-                        backgroundColor: "transparent"
+                        backgroundColor: "transparent",
+                        cursor: "pointer"
                     }}
-                    activeStyle={{
-                        backgroundColor: "#4dabf7",
-                        fontWeight: "600"
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2c2c2c";
                     }}
-                />
-                <Linkbtn 
-                    href="/aboutus" 
-                    label="O nama" 
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                >
+                    Početna
+                </div>
+
+                <div
+                    onClick={() => window.location.href = '/aboutus'}
                     style={{
                         color: "#fff",
-                        textDecoration: "none",
-                        padding: "0.75rem 1rem",
+                        padding: "0.5rem 0.75rem",
                         borderRadius: "8px",
                         transition: "all 0.2s ease",
-                        backgroundColor: "#4dabf7",
-                        fontWeight: "600"
+                        backgroundColor: "transparent",
+                        cursor: "pointer"
                     }}
-                />
-                <Linkbtn 
-                    href="/user" 
-                    label="Korisnik" 
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#2c2c2c";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                >
+                    O nama
+                </div>
+                
+                <div
+                    ref={korisnikButtonRef}
+                    onClick={() => setIsPopupOpen(!isPopupOpen)}
                     style={{
                         color: "#fff",
-                        textDecoration: "none",
-                        padding: "0.75rem 1rem",
+                        padding: "0.5rem 0.75rem",
                         borderRadius: "8px",
                         transition: "all 0.2s ease",
-                        backgroundColor: "transparent"
+                        backgroundColor: isPopupOpen ? "#4dabf7" : "transparent",
+                        cursor: "pointer",
+                        fontWeight: isPopupOpen ? "600" : "normal"
                     }}
-                    activeStyle={{
-                        backgroundColor: "#4dabf7",
-                        fontWeight: "600"
+                    onMouseEnter={(e) => {
+                        if (!isPopupOpen) {
+                            e.currentTarget.style.backgroundColor = "#2c2c2c";
+                        }
                     }}
+                    onMouseLeave={(e) => {
+                        if (!isPopupOpen) {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                        }
+                    }}
+                >
+                    Korisnik
+                </div>
+
+                <PopupKorisnik
+                    isOpen={isPopupOpen}
+                    onClose={() => setIsPopupOpen(false)}
+                    triggerRef={korisnikButtonRef}
                 />
             </nav>
         </aside>
