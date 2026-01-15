@@ -12,12 +12,12 @@ async function main() {
   
   console.log(`Učitavam fajl sa: ${filePath}`);
 
-  const stanice = [];
+  const stanice: { stanica_id: number; naziv: any; lat: number; lng: number; aktivna: boolean; }[] = [];
 
-  await new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     fs.createReadStream(filePath)
       .pipe(csvParser())
-      .on("data", (row) => {
+      .on("data", (row: { stop_code: any; stop_id: any; stop_name: any; stop_lat: string; stop_lon: string; }) => {
         try {
           const id = parseInt(row.stop_code || row.stop_id, 10);
           const naziv = row.stop_name;
@@ -43,7 +43,7 @@ async function main() {
         console.log(`Učitano ${stanice.length} stanica iz CSV fajla`);
         resolve();
       })
-      .on("error", (err) => {
+      .on("error", (err: any) => {
         console.error("Greška pri čitanju fajla:", err);
         reject(err);
       });
@@ -75,3 +75,4 @@ main()
     await prisma.$disconnect();
     console.log("Prisma konekcija zatvorena");
   });
+  
