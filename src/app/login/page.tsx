@@ -30,7 +30,7 @@ export default function LoginPage() {
       username === MOCK_USER.username &&
       password === MOCK_USER.password
     ) {
-      sessionStorage.setItem("auth", "user");
+      sessionStorage.setItem("auth", "admin");
       sessionStorage.setItem("username", "Pera Perić");
       router.push("/");
     } else {

@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import {Korisnik} from '../types/modeli'
-import {Uloga} from '../types/modeli'
+import { Korisnik } from '../types/modeli'
+import { Uloga } from '../types/modeli'
 
 interface PopupKorisnikProps {
   isOpen: boolean;
@@ -19,13 +19,41 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
   const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
+    setIsGuest(false);
+    setKorisnik(null);
+    setUloga(null);
+
     const auth = sessionStorage.getItem('auth');
     const username = sessionStorage.getItem('username');
 
-    if (auth === 'guest') {
+    if (auth === 'guest' || !auth) {
       setIsGuest(true);
-      setUloga({ uloga_id: 3, naziv: 'Gost', opis: 'Neregistrovan korisnik' });
-    } else if (auth === 'user' && username) {
+      setUloga({
+        uloga_id: 3,
+        naziv: 'Gost',
+        opis: 'Neregistrovan korisnik'
+      });
+      return;
+    }
+
+    if (auth === 'admin' && username) {
+      setKorisnik({
+        korisnik_id: 1,
+        email: 'admin@beogradplus.rs',
+        password_hash: '',
+        ime: username,
+        datum_kreiranja: new Date('2024-01-15'),
+        uloga_id: 1
+      });
+      setUloga({
+        uloga_id: 1,
+        naziv: 'Administrator',
+        opis: 'Sistem administrator'
+      });
+      return;
+    }
+
+    if (auth === 'user' && username) {
       setKorisnik({
         korisnik_id: 1,
         email: 'pera@beogradplus.rs',
@@ -34,19 +62,32 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
         datum_kreiranja: new Date('2024-01-15'),
         uloga_id: 2
       });
-      setUloga({ uloga_id: 2, naziv: 'Ulogovani korisnik', opis: 'Registrovan korisnik sa punim pristupom' });
+      setUloga({
+        uloga_id: 2,
+        naziv: 'Ulogovani korisnik',
+        opis: 'Registrovan korisnik sa punim pristupom'
+      });
+      return;
     }
+
+    setIsGuest(true);
+    setUloga({
+      uloga_id: 3,
+      naziv: 'Gost',
+      opis: 'Neregistrovan korisnik'
+    });
   }, [isOpen]);
+
 
   useEffect(() => {
     if (isOpen && triggerRef.current && popupRef.current) {
       const triggerRect = triggerRef.current.getBoundingClientRect();
       const popupRect = popupRef.current.getBoundingClientRect();
-      
+
       const top = triggerRect.bottom + 8;
       let left = triggerRect.left;
 
-      
+
       if (left + popupRect.width > window.innerWidth) {
         left = triggerRect.right - popupRect.width;
       }
@@ -86,22 +127,26 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
     router.push('/login');
   };
 
+  const handleAdminPanel = () => {
+    router.push('/admin');
+  };
+
   if (!isOpen) return null;
 
   const getUlogaColor = (ulogaId: number) => {
     switch (ulogaId) {
-      case 1: return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; // Admin
-      case 2: return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; // Ulogovani
-      case 3: return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; // Gost
+      case 1: return 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'; 
+      case 2: return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'; 
+      case 3: return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'; 
       default: return 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     }
   };
 
   const getUlogaIcon = (ulogaId: number) => {
     switch (ulogaId) {
-      case 1: return '👑'; // Admin
-      case 2: return '👤'; // Ulogovani
-      case 3: return '🎭'; // Gost
+      case 1: return '👑'; 
+      case 2: return '👤'; 
+      case 3: return '🎭'; 
       default: return '👤';
     }
   };
@@ -140,7 +185,6 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
         }
       `}</style>
 
-      {/* Header */}
       <div
         style={{
           background: uloga ? getUlogaColor(uloga.uloga_id) : '#667eea',
@@ -160,19 +204,19 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
           borderRadius: '50%',
           filter: 'blur(40px)'
         }} />
-        
+
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ 
-            fontSize: '48px', 
+          <div style={{
+            fontSize: '48px',
             marginBottom: '8px',
             textAlign: 'center',
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
           }}>
             {uloga ? getUlogaIcon(uloga.uloga_id) : '👤'}
           </div>
-          <h3 style={{ 
-            margin: 0, 
-            fontSize: '20px', 
+          <h3 style={{
+            margin: 0,
+            fontSize: '20px',
             fontWeight: '600',
             textAlign: 'center',
             textShadow: '0 2px 4px rgba(0,0,0,0.1)'
@@ -180,9 +224,9 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
             {isGuest ? 'Gost' : korisnik?.ime || 'Korisnik'}
           </h3>
           {!isGuest && korisnik && (
-            <p style={{ 
-              margin: '4px 0 0 0', 
-              fontSize: '14px', 
+            <p style={{
+              margin: '4px 0 0 0',
+              fontSize: '14px',
               opacity: 0.9,
               textAlign: 'center'
             }}>
@@ -192,9 +236,8 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
         </div>
       </div>
 
-      {/* Body */}
+      
       <div style={{ padding: '20px' }}>
-        {/* Uloga badge */}
         <div style={{
           background: uloga ? getUlogaColor(uloga.uloga_id) : '#f0f0f0',
           color: 'white',
@@ -209,7 +252,6 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
           {uloga?.naziv || 'Nepoznata uloga'}
         </div>
 
-        {/* Info*/}
         {!isGuest && korisnik && (
           <div style={{ marginBottom: '16px' }}>
             <div style={{
@@ -218,9 +260,9 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
               padding: '12px 16px',
               marginBottom: '8px'
             }}>
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#6c757d', 
+              <div style={{
+                fontSize: '12px',
+                color: '#6c757d',
                 marginBottom: '4px',
                 fontWeight: '500'
               }}>
@@ -230,15 +272,15 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
                 #{korisnik.korisnik_id}
               </div>
             </div>
-            
+
             <div style={{
               background: '#f8f9fa',
               borderRadius: '12px',
               padding: '12px 16px'
             }}>
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#6c757d', 
+              <div style={{
+                fontSize: '12px',
+                color: '#6c757d',
                 marginBottom: '4px',
                 fontWeight: '500'
               }}>
@@ -255,7 +297,6 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
           </div>
         )}
 
-        {/* Akcije */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {isGuest ? (
             <button
@@ -285,6 +326,35 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
             </button>
           ) : (
             <>
+              {uloga?.uloga_id === 1 && (
+                <button
+                  onClick={handleAdminPanel}
+                  aria-label="Admin panel"
+                  style={{
+                    background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    color: '#212529',
+                    border: 'none',
+                    padding: '10px',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                  }}
+                >
+                  ⚙️ Admin panel
+                </button>
+              )}
+
               <button
                 onClick={handleLogout}
                 style={{
