@@ -1,15 +1,15 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { MapContainer, TileLayer } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 import Sidebar from '../../components/sidebar'
 import Bubble from '../../components/bubble'
-import Map from '../../components/map'
 import StationItem from '../../components/station'
 import LineItem from '../../components/line'
 import { Stanica, Linija, Korisnik } from '../../types/modeli'
 
 export default function AdminPage() {
-  const router = useRouter()
   const [stanice, setStanice] = useState<Stanica[]>([])
   const [linije, setLinije] = useState<Linija[]>([])
   const [korisnici, setKorisnici] = useState<Korisnik[]>([])
@@ -30,6 +30,8 @@ export default function AdminPage() {
   
   const [deleteStanicaSearch, setDeleteStanicaSearch] = useState('')
   const [deleteLinijaSearch, setDeleteLinijaSearch] = useState('')
+  const [selectedStanica, setSelectedStanica] = useState<Stanica | null>(null)
+  const [selectedLinija, setSelectedLinija] = useState<Linija | null>(null)
   const [openStanicaSearch, setOpenStanicaSearch] = useState(false)
   const [openLinijaSearch, setOpenLinijaSearch] = useState(false)
   const [promoteEmail, setPromoteEmail] = useState('')
@@ -39,12 +41,6 @@ export default function AdminPage() {
   const linijaSearchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const auth = sessionStorage.getItem('auth')
-    if (auth !== 'admin') {
-      router.push('/login')
-      return
-    }
-
     const initialStanice: Stanica[] = [
       { stanica_id: 1, naziv: 'Savski Trg', lat: 44.816, lng: 20.458, aktivna: true },
       { stanica_id: 2, naziv: 'Trg Slavija', lat: 44.812, lng: 20.468, aktivna: true },
@@ -67,7 +63,7 @@ export default function AdminPage() {
     setStanice(initialStanice)
     setLinije(initialLinije)
     setKorisnici(initialKorisnici)
-  }, [router])
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -107,6 +103,7 @@ export default function AdminPage() {
     setStanice(prev => prev.filter(s => s.stanica_id !== stanica.stanica_id))
     setPoruka(`Stanica "${stanica.naziv}" obrisana`)
     setDeleteStanicaSearch('')
+    setSelectedStanica(null)
     setOpenStanicaSearch(false)
   }
 
@@ -134,6 +131,7 @@ export default function AdminPage() {
     setLinije(prev => prev.filter(l => l.linija_id !== linija.linija_id))
     setPoruka(`Linija "${linija.broj} - ${linija.ime_linije}" obrisana`)
     setDeleteLinijaSearch('')
+    setSelectedLinija(null)
     setOpenLinijaSearch(false)
   }
 
@@ -175,389 +173,333 @@ export default function AdminPage() {
 
       <div className="flex-grow-1 position-relative" style={{ marginLeft: '7vw' }}>
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
           zIndex: 0,
-          filter: 'blur(6px)',
-          pointerEvents: 'none',
-          height: '200vh'
+          filter: "blur(6px)",
+          pointerEvents: "none",
+          height: "200vh"
         }}>
-          <Map visina="200vh" sirina="100%" zoom={13} />
+          <MapContainer
+            center={[44.8264, 20.4318]}
+            zoom={13}
+            scrollWheelZoom={false}
+            style={{ height: "200vh", width: "100%" }}
+            zoomControl={false}
+            dragging={false}
+            doubleClickZoom={false}
+            attributionControl={false}
+          >
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          </MapContainer>
         </div>
 
         <div className="position-relative" style={{ 
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
           height: '100%',
           overflowY: 'auto',
-          paddingTop: '3rem',
-          paddingBottom: '5rem',
+          paddingTop: '2rem',
+          paddingBottom: '3rem',
           zIndex: 1
         }}>
-          <div className="container py-4">
-            <div className="row justify-content-between align-items-center mb-4">
+          <div className="container py-3">
+            <div className="row justify-content-between align-items-center mb-3">
               <div className="col-auto">
                 <h1 className="h3 fw-bold text-dark">Admin panel</h1>
-                <p className="text-secondary mb-0">Upravljanje stanicama, linijama i korisnicima</p>
+                <p className="text-secondary mb-0" style={{fontSize: '0.9rem'}}>Upravljanje stanicama, linijama i korisnicima</p>
               </div>
               <div className="col-auto">
-                <a href="/" className="btn btn-outline-dark">Nazad na sajt</a>
+                <button onClick={() => window.location.href = '/'} className="btn btn-outline-dark btn-sm">Nazad na sajt</button>
               </div>
             </div>
 
-            {/* Dodavanje stanica */}
-            <div className="row g-4 mb-4">
-              <div className="col-12">
-                <Bubble padding="lg" opacity={0.9}>
-                  <h4 className="fw-bold mb-3">Dodaj stanicu</h4>
-                  <div>
-                    <div className="mb-2">
+            <div className="row g-3 mb-3" style={{ position: 'relative', zIndex: 50 }}>
+              <div className="col-md-6">
+                <Bubble padding="sm" opacity={0.9}>
+                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Dodaj stanicu</h5>
+                  <div className="mb-2">
+                    <input
+                      value={stanicaForm.naziv}
+                      onChange={e => setStanicaForm({ ...stanicaForm, naziv: e.target.value })}
+                      className="form-control form-control-sm"
+                      placeholder="Naziv stanice"
+                    />
+                  </div>
+                  <div className="row g-2 mb-2">
+                    <div className="col">
                       <input
-                        value={stanicaForm.naziv}
-                        onChange={e => setStanicaForm({ ...stanicaForm, naziv: e.target.value })}
-                        className="form-control"
-                        placeholder="Naziv stanice"
+                        value={stanicaForm.lat}
+                        onChange={e => setStanicaForm({ ...stanicaForm, lat: e.target.value })}
+                        className="form-control form-control-sm"
+                        placeholder="Lat"
                       />
                     </div>
-                    <div className="row g-2 mb-2">
-                      <div className="col">
-                        <input
-                          value={stanicaForm.lat}
-                          onChange={e => setStanicaForm({ ...stanicaForm, lat: e.target.value })}
-                          className="form-control"
-                          placeholder="Lat"
-                        />
-                      </div>
-                      <div className="col">
-                        <input
-                          value={stanicaForm.lng}
-                          onChange={e => setStanicaForm({ ...stanicaForm, lng: e.target.value })}
-                          className="form-control"
-                          placeholder="Lng"
-                        />
-                      </div>
-                    </div>
-                    <div className="form-check form-switch mb-3">
+                    <div className="col">
                       <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="aktivnaStanica"
-                        checked={stanicaForm.aktivna}
-                        onChange={e => setStanicaForm({ ...stanicaForm, aktivna: e.target.checked })}
+                        value={stanicaForm.lng}
+                        onChange={e => setStanicaForm({ ...stanicaForm, lng: e.target.value })}
+                        className="form-control form-control-sm"
+                        placeholder="Lng"
                       />
-                      <label className="form-check-label" htmlFor="aktivnaStanica">Aktivna</label>
                     </div>
-                    <div className="d-flex gap-2">
-                      <button onClick={addStanica} className="btn btn-primary">Dodaj stanicu</button>
-                      <button
-                        onClick={() => setStanicaForm({ naziv: '', lat: '', lng: '', aktivna: true })}
-                        className="btn btn-outline-secondary"
-                      >
-                        Resetuj
-                      </button>
-                    </div>
+                  </div>
+                  <div className="form-check form-switch mb-2">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="aktivnaStanica"
+                      checked={stanicaForm.aktivna}
+                      onChange={e => setStanicaForm({ ...stanicaForm, aktivna: e.target.checked })}
+                    />
+                    <label className="form-check-label" htmlFor="aktivnaStanica" style={{fontSize: '0.9rem'}}>Aktivna</label>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button onClick={addStanica} className="btn btn-primary btn-sm">Dodaj</button>
+                    <button
+                      onClick={() => setStanicaForm({ naziv: '', lat: '', lng: '', aktivna: true })}
+                      className="btn btn-outline-secondary btn-sm"
+                    >
+                      Resetuj
+                    </button>
+                  </div>
+                </Bubble>
+              </div>
+
+              <div className="col-md-6">
+                <Bubble padding="sm" opacity={0.9}>
+                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Dodaj liniju</h5>
+                  <div className="mb-2">
+                    <input
+                      value={linijaForm.broj}
+                      onChange={e => setLinijaForm({ ...linijaForm, broj: e.target.value })}
+                      className="form-control form-control-sm"
+                      placeholder="Broj linije"
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <input
+                      value={linijaForm.ime_linije}
+                      onChange={e => setLinijaForm({ ...linijaForm, ime_linije: e.target.value })}
+                      className="form-control form-control-sm"
+                      placeholder="Ime linije"
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <select
+                      value={linijaForm.tip}
+                      onChange={e => setLinijaForm({ ...linijaForm, tip: e.target.value })}
+                      className="form-select form-select-sm"
+                    >
+                      <option value="autobus">Autobus</option>
+                      <option value="tramvaj">Tramvaj</option>
+                      <option value="trolejbus">Trolejbus</option>
+                    </select>
+                  </div>
+                  <div className="form-check form-switch mb-2">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="aktivnaLinija"
+                      checked={linijaForm.aktivna}
+                      onChange={e => setLinijaForm({ ...linijaForm, aktivna: e.target.checked })}
+                    />
+                    <label className="form-check-label" htmlFor="aktivnaLinija" style={{fontSize: '0.9rem'}}>Aktivna</label>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button onClick={addLinija} className="btn btn-primary btn-sm">Dodaj</button>
+                    <button
+                      onClick={() => setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })}
+                      className="btn btn-outline-secondary btn-sm"
+                    >
+                      Resetuj
+                    </button>
                   </div>
                 </Bubble>
               </div>
             </div>
 
-            {/* Brisanje stanica */}
-            <div className="row g-4 mb-4">
-              <div className="col-12">
-                <Bubble padding="lg" opacity={0.9}>
-                  <h4 className="fw-bold mb-3">Obriši stanicu</h4>
-                  <div className="row g-3">
-                    <div className="col-md-9">
-                      <div ref={stanicaSearchRef} style={{ position: 'relative' }}>
-                        <div
-                          className="input-group"
-                          style={{
-                            borderRadius: 50,
-                            backgroundColor: 'white',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          <input
-                            type="text"
-                            className="form-control border-0 px-4"
-                            placeholder="Pretraži stanice..."
-                            value={deleteStanicaSearch}
-                            onChange={e => {
-                              setDeleteStanicaSearch(e.target.value)
-                              setOpenStanicaSearch(true)
-                            }}
-                            onFocus={() => setOpenStanicaSearch(true)}
-                            style={{
-                              borderRadius: 0,
-                              backgroundColor: 'white'
-                            }}
-                          />
-                          <button
-                            onClick={() => setOpenStanicaSearch(true)}
-                            className="btn btn-light border-0"
-                            style={{
-                              width: 52,
-                              padding: '0.5rem 0',
-                              borderRadius: 0,
-                              backgroundColor: 'white',
-                              color: 'black'
-                            }}
-                          >
-                            🔍
-                          </button>
+            <div className="row g-3 mb-3">
+              <div className="col-md-6" style={{ position: 'relative', zIndex: 100 }}>
+                <Bubble padding="sm" opacity={0.9}>
+                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Obriši stanicu</h5>
+                  <div ref={stanicaSearchRef} style={{ position: 'relative', zIndex: 9999 }}>
+                    <div className="input-group input-group-sm mb-2">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Pretraži stanice..."
+                        value={deleteStanicaSearch}
+                        onChange={e => setDeleteStanicaSearch(e.target.value)}
+                      />
+                      <button 
+                        className="btn btn-outline-secondary" 
+                        type="button"
+                        onClick={() => setOpenStanicaSearch(true)}
+                      >
+                        🔍
+                      </button>
+                    </div>
+
+                    {openStanicaSearch && deleteStanicaSearch && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '40px',
+                        left: 0,
+                        width: '100%',
+                        maxHeight: 250,
+                        background: 'white',
+                        borderRadius: 8,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+                        overflowY: 'auto',
+                        zIndex: 9999
+                      }}>
+                        <div className="p-2 fw-bold border-bottom" style={{fontSize: '0.85rem'}}>
+                          {filteredStanice.length} rezultata
                         </div>
-
-                        {openStanicaSearch && deleteStanicaSearch && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: '60px',
-                              left: 0,
-                              width: '100%',
-                              maxHeight: 300,
-                              background: 'white',
-                              borderRadius: 12,
-                              boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-                              overflowY: 'auto',
-                              zIndex: 1000
-                            }}
-                          >
-                            <div className="p-3 fw-bold border-bottom">
-                              {filteredStanice.length} rezultata
+                        {filteredStanice.length > 0 ? (
+                          filteredStanice.map(stanica => (
+                            <div key={stanica.stanica_id}>
+                              <StationItem 
+                                stanica={stanica} 
+                                onClick={() => {
+                                  setSelectedStanica(stanica)
+                                  setOpenStanicaSearch(false)
+                                }} 
+                              />
                             </div>
-
-                            {filteredStanice.length > 0 ? (
-                              filteredStanice.map(stanica => (
-                                <div key={stanica.stanica_id}>
-                                  <StationItem
-                                    stanica={stanica}
-                                    onClick={() => deleteStanica(stanica)}
-                                  />
-                                </div>
-                              ))
-                            ) : (
-                              <div className="p-3 text-muted">Nema rezultata</div>
-                            )}
-                          </div>
+                          ))
+                        ) : (
+                          <div className="p-2 text-muted" style={{fontSize: '0.85rem'}}>Nema rezultata</div>
                         )}
                       </div>
-                    </div>
-                    <div className="col-md-3 d-flex align-items-start">
-                      <button
-                        onClick={() => {
-                          if (filteredStanice.length === 1) {
-                            deleteStanica(filteredStanice[0])
-                          } else if (filteredStanice.length === 0) {
-                            setPoruka('Nema stanice za brisanje')
-                          } else {
-                            setPoruka('Odaberite tačno jednu stanicu')
-                          }
-                        }}
-                        className="btn btn-danger w-100"
-                        disabled={!deleteStanicaSearch}
-                      >
-                        Obriši
-                      </button>
-                    </div>
+                    )}
                   </div>
+                  {selectedStanica && (
+                    <div className="alert alert-warning p-2 mb-2" style={{fontSize: '0.85rem'}}>
+                      Selektovano: <strong>{selectedStanica.naziv}</strong>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (selectedStanica) {
+                        deleteStanica(selectedStanica)
+                      } else {
+                        setPoruka('Prvo pretražite i odaberite stanicu')
+                      }
+                    }}
+                    className="btn btn-danger btn-sm w-100"
+                    disabled={!selectedStanica}
+                  >
+                    Obriši
+                  </button>
                 </Bubble>
               </div>
-            </div>
 
-            {/* Dodavanje linija */}
-            <div className="row g-4 mb-4">
-              <div className="col-12">
-                <Bubble padding="lg" opacity={0.9}>
-                  <h4 className="fw-bold mb-3">Dodaj liniju</h4>
-                  <div>
-                    <div className="mb-2">
+              <div className="col-md-6" style={{ position: 'relative', zIndex: 100 }}>
+                <Bubble padding="sm" opacity={0.9}>
+                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Obriši liniju</h5>
+                  <div ref={linijaSearchRef} style={{ position: 'relative', zIndex: 9999 }}>
+                    <div className="input-group input-group-sm mb-2">
                       <input
-                        value={linijaForm.broj}
-                        onChange={e => setLinijaForm({ ...linijaForm, broj: e.target.value })}
+                        type="text"
                         className="form-control"
-                        placeholder="Broj linije"
+                        placeholder="Pretraži linije..."
+                        value={deleteLinijaSearch}
+                        onChange={e => setDeleteLinijaSearch(e.target.value)}
                       />
-                    </div>
-                    <div className="mb-2">
-                      <input
-                        value={linijaForm.ime_linije}
-                        onChange={e => setLinijaForm({ ...linijaForm, ime_linije: e.target.value })}
-                        className="form-control"
-                        placeholder="Ime linije"
-                      />
-                    </div>
-                    <div className="mb-2">
-                      <select
-                        value={linijaForm.tip}
-                        onChange={e => setLinijaForm({ ...linijaForm, tip: e.target.value })}
-                        className="form-select"
+                      <button 
+                        className="btn btn-outline-secondary" 
+                        type="button"
+                        onClick={() => setOpenLinijaSearch(true)}
                       >
-                        <option value="autobus">Autobus</option>
-                        <option value="tramvaj">Tramvaj</option>
-                        <option value="trolejbus">Trolejbus</option>
-                      </select>
-                    </div>
-                    <div className="form-check form-switch mb-3">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="aktivnaLinija"
-                        checked={linijaForm.aktivna}
-                        onChange={e => setLinijaForm({ ...linijaForm, aktivna: e.target.checked })}
-                      />
-                      <label className="form-check-label" htmlFor="aktivnaLinija">Aktivna</label>
-                    </div>
-                    <div className="d-flex gap-2">
-                      <button onClick={addLinija} className="btn btn-primary">Dodaj liniju</button>
-                      <button
-                        onClick={() => setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })}
-                        className="btn btn-outline-secondary"
-                      >
-                        Resetuj
+                        🔍
                       </button>
                     </div>
-                  </div>
-                </Bubble>
-              </div>
-            </div>
 
-            {/* Brisanje linija */}
-            <div className="row g-4 mb-4">
-              <div className="col-12">
-                <Bubble padding="lg" opacity={0.9}>
-                  <h4 className="fw-bold mb-3">Obriši liniju</h4>
-                  <div className="row g-3">
-                    <div className="col-md-9">
-                      <div ref={linijaSearchRef} style={{ position: 'relative' }}>
-                        <div
-                          className="input-group"
-                          style={{
-                            borderRadius: 50,
-                            backgroundColor: 'white',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          <input
-                            type="text"
-                            className="form-control border-0 px-4"
-                            placeholder="Pretraži linije..."
-                            value={deleteLinijaSearch}
-                            onChange={e => {
-                              setDeleteLinijaSearch(e.target.value)
-                              setOpenLinijaSearch(true)
-                            }}
-                            onFocus={() => setOpenLinijaSearch(true)}
-                            style={{
-                              borderRadius: 0,
-                              backgroundColor: 'white'
-                            }}
-                          />
-                          <button
-                            onClick={() => setOpenLinijaSearch(true)}
-                            className="btn btn-light border-0"
-                            style={{
-                              width: 52,
-                              padding: '0.5rem 0',
-                              borderRadius: 0,
-                              backgroundColor: 'white',
-                              color: 'black'
-                            }}
-                          >
-                            🔍
-                          </button>
+                    {openLinijaSearch && deleteLinijaSearch && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '40px',
+                        left: 0,
+                        width: '100%',
+                        maxHeight: 250,
+                        background: 'white',
+                        borderRadius: 8,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+                        overflowY: 'auto',
+                        zIndex: 9999
+                      }}>
+                        <div className="p-2 fw-bold border-bottom" style={{fontSize: '0.85rem'}}>
+                          {filteredLinije.length} rezultata
                         </div>
-
-                        {openLinijaSearch && deleteLinijaSearch && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: '60px',
-                              left: 0,
-                              width: '100%',
-                              maxHeight: 300,
-                              background: 'white',
-                              borderRadius: 12,
-                              boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-                              overflowY: 'auto',
-                              zIndex: 1000
-                            }}
-                          >
-                            <div className="p-3 fw-bold border-bottom">
-                              {filteredLinije.length} rezultata
+                        {filteredLinije.length > 0 ? (
+                          filteredLinije.map(linija => (
+                            <div key={linija.linija_id}>
+                              <LineItem 
+                                linija={linija} 
+                                onClick={() => {
+                                  setSelectedLinija(linija)
+                                  setOpenLinijaSearch(false)
+                                }} 
+                              />
                             </div>
-
-                            {filteredLinije.length > 0 ? (
-                              filteredLinije.map(linija => (
-                                <div key={linija.linija_id}>
-                                  <LineItem
-                                    linija={linija}
-                                    onClick={() => deleteLinija(linija)}
-                                  />
-                                </div>
-                              ))
-                            ) : (
-                              <div className="p-3 text-muted">Nema rezultata</div>
-                            )}
-                          </div>
+                          ))
+                        ) : (
+                          <div className="p-2 text-muted" style={{fontSize: '0.85rem'}}>Nema rezultata</div>
                         )}
                       </div>
-                    </div>
-                    <div className="col-md-3 d-flex align-items-start">
-                      <button
-                        onClick={() => {
-                          if (filteredLinije.length === 1) {
-                            deleteLinija(filteredLinije[0])
-                          } else if (filteredLinije.length === 0) {
-                            setPoruka('Nema linije za brisanje')
-                          } else {
-                            setPoruka('Odaberite tačno jednu liniju')
-                          }
-                        }}
-                        className="btn btn-danger w-100"
-                        disabled={!deleteLinijaSearch}
-                      >
-                        Obriši
-                      </button>
-                    </div>
+                    )}
                   </div>
+                  {selectedLinija && (
+                    <div className="alert alert-warning p-2 mb-2" style={{fontSize: '0.85rem'}}>
+                      Selektovano: <strong>{selectedLinija.broj} - {selectedLinija.ime_linije}</strong>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (selectedLinija) {
+                        deleteLinija(selectedLinija)
+                      } else {
+                        setPoruka('Prvo pretražite i odaberite liniju')
+                      }
+                    }}
+                    className="btn btn-danger btn-sm w-100"
+                    disabled={!selectedLinija}
+                  >
+                    Obriši
+                  </button>
                 </Bubble>
               </div>
             </div>
 
-            {/* Upravljanje korisnicima */}
-            <div className="row g-4 mb-4">
+            <div className="row g-3 mb-3">
               <div className="col-lg-6">
-                <Bubble padding="lg" opacity={0.9}>
-                  <h5 className="fw-bold mb-3">Korisnici</h5>
-                  <div className="list-group mb-3">
+                <Bubble padding="sm" opacity={0.9}>
+                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Korisnici</h5>
+                  <div className="list-group mb-3" style={{maxHeight: 200, overflowY: 'auto'}}>
                     {korisnici.map(k => (
-                      <div key={k.korisnik_id} className="list-group-item d-flex justify-content-between align-items-center">
+                      <div key={k.korisnik_id} className="list-group-item d-flex justify-content-between align-items-center p-2">
                         <div>
-                          <div className="fw-semibold">{k.ime} • {k.email}</div>
-                          <div className="text-secondary small">
+                          <div className="fw-semibold" style={{fontSize: '0.85rem'}}>{k.ime} • {k.email}</div>
+                          <div className="text-secondary" style={{fontSize: '0.75rem'}}>
                             Uloga: {k.uloga_id === 1 ? 'Admin' : k.uloga_id === 2 ? 'Korisnik' : 'Gost'}
                           </div>
                         </div>
-                        <div className="d-flex gap-2">
-                          {k.uloga_id !== 1 && (
-                            <button
-                              onClick={() => {
-                                const updated = korisnici.map(u =>
-                                  u.korisnik_id === k.korisnik_id ? { ...u, uloga_id: 1 } : u
-                                )
-                                setKorisnici(updated)
-                                setPoruka('Korisnik postavljen za admina')
-                              }}
-                              className="btn btn-sm btn-outline-warning"
-                            >
-                              Napravi adminom
-                            </button>
-                          )}
-                        </div>
+                        {k.uloga_id !== 1 && (
+                          <button
+                            onClick={() => {
+                              const updated = korisnici.map(u =>
+                                u.korisnik_id === k.korisnik_id ? { ...u, uloga_id: 1 } : u
+                              )
+                              setKorisnici(updated)
+                              setPoruka('Korisnik postavljen za admina')
+                            }}
+                            className="btn btn-sm btn-outline-warning"
+                            style={{fontSize: '0.75rem'}}
+                          >
+                            Admin
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -566,27 +508,27 @@ export default function AdminPage() {
                       <input
                         value={promoteEmail}
                         onChange={e => setPromoteEmail(e.target.value)}
-                        className="form-control"
+                        className="form-control form-control-sm"
                         placeholder="Email korisnika"
                       />
                     </div>
                     <div className="col-auto">
-                      <button onClick={promoteToAdmin} className="btn btn-primary">Promoviši</button>
+                      <button onClick={promoteToAdmin} className="btn btn-primary btn-sm">Promoviši</button>
                     </div>
                   </div>
                 </Bubble>
               </div>
 
               <div className="col-lg-6">
-                <Bubble padding="lg" opacity={0.9}>
-                  <h5 className="fw-bold mb-3">Brze akcije</h5>
+                <Bubble padding="sm" opacity={0.9}>
+                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Brze akcije</h5>
                   <div className="d-flex flex-column gap-2">
                     <button
                       onClick={() => {
                         setStanice([])
                         setPoruka('Sve stanice obrisane')
                       }}
-                      className="btn btn-outline-danger"
+                      className="btn btn-outline-danger btn-sm"
                     >
                       Obriši sve stanice
                     </button>
@@ -595,7 +537,7 @@ export default function AdminPage() {
                         setLinije([])
                         setPoruka('Sve linije obrisane')
                       }}
-                      className="btn btn-outline-danger"
+                      className="btn btn-outline-danger btn-sm"
                     >
                       Obriši sve linije
                     </button>
@@ -604,7 +546,7 @@ export default function AdminPage() {
                         setKorisnici(prev => prev.map(u => ({ ...u, uloga_id: 2 })))
                         setPoruka('Resetovane uloge korisnika')
                       }}
-                      className="btn btn-outline-secondary"
+                      className="btn btn-outline-secondary btn-sm"
                     >
                       Resetuj sve uloge na korisnik
                     </button>
@@ -613,17 +555,19 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Poruka */}
             {poruka && (
-              <div className="row mt-4">
+              <div className="row mt-3">
                 <div className="col-12">
-                  <div className="alert alert-info text-center">{poruka}</div>
+                  <div className="alert alert-info text-center" style={{fontSize: '0.9rem'}}>{poruka}</div>
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     </div>
   )
 }
