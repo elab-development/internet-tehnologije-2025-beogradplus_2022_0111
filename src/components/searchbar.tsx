@@ -2,14 +2,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import StationItem from '../components/station'
 import LineItem from '../components/line'
-
-import {Stanica,Linija} from '../types/modeli'
-
+import { Stanica, Linija } from '../types/modeli'
 
 export default function Searchbar() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(5);
+  const [selectedStation, setSelectedStation] = useState<Stanica | null>(null);
+
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const stanice: Stanica[] = [
     { stanica_id: 1, naziv: "Zemun gornji grad", lat: 44.8439, lng: 20.4014, aktivna: true },
@@ -24,9 +25,8 @@ export default function Searchbar() {
     { linija_id: 4, broj: "29", tip: "trolejbus", ime_linije: "Medakovic - Studentski trg", aktivna: false },
   ];
 
-   const searchRef = useRef<HTMLDivElement>(null);
-
   function handleSearch() {
+    setSelectedStation(null); 
     setOpen(true);
     setLimit(5);
   }
@@ -37,31 +37,27 @@ export default function Searchbar() {
     }
   }
 
-  const filteredStanice = stanice.filter(function (s) {
-    return s.naziv.toLowerCase().includes(query.toLowerCase());
-  });
+  const filteredStanice = stanice.filter(s =>
+    s.naziv.toLowerCase().includes(query.toLowerCase())
+  );
 
-  const filteredLinije = linije.filter(function (l) {
-    return (
-      l.broj.toLowerCase().includes(query.toLowerCase()) ||
-      l.ime_linije.toLowerCase().includes(query.toLowerCase())
-    );
-  });
+  const filteredLinije = linije.filter(l =>
+    l.broj.toLowerCase().includes(query.toLowerCase()) ||
+    l.ime_linije.toLowerCase().includes(query.toLowerCase())
+  );
 
   const totalResults = filteredStanice.length + filteredLinije.length;
 
-  useEffect(function () {
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setOpen(false);
+        setSelectedStation(null);
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
-
-    return function cleanup() {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -88,32 +84,20 @@ export default function Searchbar() {
           className="form-control border-0 px-4"
           placeholder="Pretraži stanice i linije..."
           value={query}
-          onChange={function (e: React.ChangeEvent<HTMLInputElement>) {
-            setQuery(e.target.value);
-          }}
+          onChange={e => setQuery(e.target.value)}
           onKeyPress={handleKeyPress}
-          style={{
-            borderRadius: 0,
-            backgroundColor: "white"
-          }}
         />
 
         <button
           onClick={handleSearch}
           className="btn btn-light border-0"
-          style={{
-            width: 52,
-            padding: "0.5rem 0",
-            borderRadius: 0,
-            backgroundColor: "white",
-            color: "black"
-          }}
+          style={{ width: 52 }}
         >
           🔍
         </button>
       </div>
 
-      {open && (
+      {open && !selectedStation && (
         <div
           style={{
             position: "absolute",
@@ -133,41 +117,30 @@ export default function Searchbar() {
 
           {filteredStanice.length > 0 && (
             <>
-              <div className="px-3 py-2 bg-light fw-bold" style={{ fontSize: "1rem" }}>
-                Stanice
-              </div>
-              {filteredStanice.slice(0, limit).map(function (stanica) {
-                return (
-                  <StationItem
-                    key={stanica.stanica_id}
-                    stanica={stanica}
-                    onClick={function () {
-                      setOpen(false);
-                      console.log("Selected station:", stanica);
-                    }}
-                  />
-                );
-              })}
+              <div className="px-3 py-2 bg-light fw-bold">Stanice</div>
+              {filteredStanice.slice(0, limit).map(stanica => (
+                <StationItem
+                  key={stanica.stanica_id}
+                  stanica={stanica}
+                  onClick={() => {
+                    setSelectedStation(stanica);
+                    setOpen(false);
+                  }}
+                />
+              ))}
             </>
           )}
 
           {filteredLinije.length > 0 && (
             <>
-              <div className="px-3 py-2 bg-light fw-bold" style={{ fontSize: "1rem" }}>
-                Linije
-              </div>
-              {filteredLinije.slice(0, limit).map(function (linija) {
-                return (
-                  <LineItem
-                    key={linija.linija_id}
-                    linija={linija}
-                    onClick={function () {
-                      setOpen(false);
-                      console.log("Selected line:", linija);
-                    }}
-                  />
-                );
-              })}
+              <div className="px-3 py-2 bg-light fw-bold">Linije</div>
+              {filteredLinije.slice(0, limit).map(linija => (
+                <LineItem
+                  key={linija.linija_id}
+                  linija={linija}
+                  onClick={() => setOpen(false)}
+                />
+              ))}
             </>
           )}
 
@@ -175,19 +148,46 @@ export default function Searchbar() {
             <div
               className="text-center py-2 fw-bold"
               style={{ cursor: "pointer" }}
-              onClick={function () {
-                setLimit(function (l) { return l + 5; });
-              }}
+              onClick={() => setLimit(l => l + 5)}
             >
               Učitaj još
             </div>
           )}
 
           {totalResults === 0 && (
-            <div className="p-3 text-muted">
-              Nema rezultata
-            </div>
+            <div className="p-3 text-muted">Nema rezultata</div>
           )}
+        </div>
+      )}
+
+      {selectedStation && (
+        <div
+          style={{
+            position: "absolute",
+            top: "60px",
+            left: 0,
+            width: "100%",
+            background: "white",
+            borderRadius: 12,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+            padding: "1rem"
+          }}
+        >
+          <div className="d-flex justify-content-between mb-3">
+            <h6>{selectedStation.naziv}</h6>
+            <button
+              className="btn-close"
+              onClick={() => setSelectedStation(null)}
+            />
+          </div>
+
+          <div><strong>ID:</strong> {selectedStation.stanica_id}</div>
+          <div><strong>Lat:</strong> {selectedStation.lat}</div>
+          <div><strong>Lng:</strong> {selectedStation.lng}</div>
+          <div>
+            <strong>Status:</strong>{" "}
+            {selectedStation.aktivna ? "Aktivna" : "Neaktivna"}
+          </div>
         </div>
       )}
     </div>
