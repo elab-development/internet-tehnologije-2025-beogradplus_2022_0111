@@ -1,5 +1,5 @@
 export interface Korisnik {
-  korisnik_id: number;
+  korisnik_id?: number;
   email: string;
   password_hash: string;
   ime: string;
