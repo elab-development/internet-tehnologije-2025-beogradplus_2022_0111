@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from 'next/dynamic'
 
@@ -11,37 +11,98 @@ const TileLayer = dynamic(
   () => import('react-leaflet').then((mod) => mod.TileLayer),
   { ssr: false }
 )
-
-const MOCK_USER = {
-  username: "pera",
-  password: "peric",
-};
-
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isRegister, setIsRegister] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (
-      username === MOCK_USER.username &&
-      password === MOCK_USER.password
-    ) {
-      sessionStorage.setItem("auth", "admin");
-      sessionStorage.setItem("username", "Pera Perić");
-      router.push("/");
-    } else {
-      setError("Pogrešno korisničko ime ili lozinka");
+  useEffect(() => {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      router.push('/');
     }
-  };
+  }, [router]);
 
-  const handleGuest = () => {
-    sessionStorage.setItem("auth", "guest");
+  async function handleGuest() {
+    sessionStorage.setItem("auth", "true");
     router.push("/");
-  };
+  }
+
+  async function handleRegister(e: { preventDefault: () => void; }) {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Popunite sva polja");
+      return;
+    }
+
+    const ime = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          password,
+          ime,
+          akcija: "reg"
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Greška pri registraciji");
+        return;
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.korisnik));
+      sessionStorage.setItem("auth", "true");
+
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      setError("Greška pri povezivanju sa serverom");
+    }
+  }
+
+  async function handleLogin(e: { preventDefault: () => void; }) {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          password,
+          akcija: "log"
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Pogrešni mejl ili lozinka");
+        return;
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.korisnik));
+      sessionStorage.setItem("auth", "true");
+
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      setError("Greška pri povezivanju sa serverom");
+    }
+  }
 
   return (
     <div className="d-flex align-items-center justify-content-center vh-100 position-relative" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
@@ -70,9 +131,9 @@ export default function LoginPage() {
       <div className="card shadow-lg border-0" style={{ width: "420px", zIndex: 1, borderRadius: "16px", overflow: "hidden" }}>
         <div className="card-body p-4">
           <div className="text-center mb-4">
-            <h1 className="fw-bold mb-1" style={{ 
+            <h1 className="fw-bold mb-1" style={{
               fontSize: "2.5rem",
-              lineHeight: "1.3", 
+              lineHeight: "1.3",
               background: "linear-gradient(135deg, #087aae 0%, #93cff8 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -80,14 +141,14 @@ export default function LoginPage() {
             }}>
               BeogradPlus
             </h1>
-            <p className="text-muted mb-0">Dobrodošli nazad</p>
+            <p className="text-muted mb-0">{isRegister ? "Kreirajte nalog" : "Dobrodošli nazad"}</p>
           </div>
 
           {error && (
             <div className="alert alert-danger d-flex align-items-center" role="alert">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="me-2" viewBox="0 0 16 16">
-                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />
               </svg>
               <div>{error}</div>
             </div>
@@ -95,15 +156,15 @@ export default function LoginPage() {
 
           <div>
             <div className="mb-3">
-              <label className="form-label fw-semibold">Korisničko ime</label>
+              <label className="form-label fw-semibold">Email</label>
               <input
-                type="text"
+                type="email"
                 className="form-control form-control-lg"
                 style={{ borderRadius: "8px" }}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="Unesite korisničko ime"
+                placeholder="Unesite email"
               />
             </div>
             <div className="mb-4">
@@ -118,27 +179,29 @@ export default function LoginPage() {
                 placeholder="Unesite lozinku"
               />
             </div>
-            <button 
-              className="btn btn-lg w-100 mb-3 text-white fw-semibold" 
-              onClick={handleLogin}
-              style={{ 
+            <button
+              className="btn btn-lg w-100 mb-3 text-white fw-semibold"
+              onClick={isRegister ? handleRegister : handleLogin}
+              style={{
                 background: "linear-gradient(135deg, #087aae 0%, #93cff8 100%)",
                 border: "none",
                 borderRadius: "8px",
                 padding: "12px"
               }}
             >
-              Uloguj se
+              {isRegister ? "Registruj se" : "Uloguj se"}
             </button>
           </div>
 
           <button
             className="btn btn-outline-secondary w-100 mb-3"
-            onClick={() => setIsRegister(!isRegister)}
-            disabled
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setError("");
+            }}
             style={{ borderRadius: "8px", padding: "10px" }}
           >
-            Registracija
+            {isRegister ? "Već imaš nalog? Uloguj se" : "Nemaš nalog? Registruj se"}
           </button>
 
           <div className="position-relative my-3">

@@ -9,24 +9,30 @@ export default function Searchbar() {
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(5);
   const [selectedStation, setSelectedStation] = useState<Stanica | null>(null);
+  const [stanice, setStanice] = useState<Stanica[]>([]);
+  const [linije, setLinije] = useState<Linija[]>([]);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const stanice: Stanica[] = [
-    { stanica_id: 1, naziv: "Zemun gornji grad", lat: 44.8439, lng: 20.4014, aktivna: true },
-    { stanica_id: 2, naziv: "Batajnica centar", lat: 44.8150, lng: 20.4144, aktivna: true },
-    { stanica_id: 3, naziv: "Franse D'Eperea", lat: 44.8031, lng: 20.4769, aktivna: false },
-  ];
+  useEffect(() => {
 
-  const linije: Linija[] = [
-    { linija_id: 1, broj: "84", tip: "autobus", ime_linije: "Nova Galenika - Zeleni venac", aktivna: true },
-    { linija_id: 2, broj: "706", tip: "autobus", ime_linije: "Batajnica - Zeleni venac", aktivna: true },
-    { linija_id: 3, broj: "9", tip: "tramvaj", ime_linije: "Banjica - Blok 45", aktivna: true },
-    { linija_id: 4, broj: "29", tip: "trolejbus", ime_linije: "Medakovic - Studentski trg", aktivna: false },
-  ];
+    const fetchStanice = async () => {
+      const res = await fetch('/api/stations')
+      const data = await res.json()
+      setStanice(data)
+    }
+    fetchStanice()
+
+    const fetchLinije = async () => {
+      const res = await fetch('/api/lines')
+      const data = await res.json()
+      setLinije(data)
+    }
+    fetchLinije()
+  }, []);
 
   function handleSearch() {
-    setSelectedStation(null); 
+    setSelectedStation(null);
     setOpen(true);
     setLimit(5);
   }

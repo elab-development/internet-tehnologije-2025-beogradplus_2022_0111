@@ -16,6 +16,7 @@
     "bootstrap": "^5.3.8",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.3",
+    "jsonwebtoken": "^9.0.3",
     "leaflet": "^1.9.4",
     "next": "16.1.1",
     "pg": "^8.17.1",
@@ -26,6 +27,7 @@
     "supabase": "^2.72.7"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/pg": "^8.16.0",

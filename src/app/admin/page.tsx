@@ -10,24 +10,27 @@ import LineItem from '../../components/line'
 import { Stanica, Linija, Korisnik } from '../../types/modeli'
 
 export default function AdminPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+
   const [stanice, setStanice] = useState<Stanica[]>([])
   const [linije, setLinije] = useState<Linija[]>([])
   const [korisnici, setKorisnici] = useState<Korisnik[]>([])
-  
+
   const [stanicaForm, setStanicaForm] = useState({
     naziv: '',
     lat: '',
     lng: '',
     aktivna: true
   })
-  
+
   const [linijaForm, setLinijaForm] = useState({
     broj: '',
     tip: 'autobus',
     ime_linije: '',
     aktivna: true
   })
-  
+
   const [deleteStanicaSearch, setDeleteStanicaSearch] = useState('')
   const [deleteLinijaSearch, setDeleteLinijaSearch] = useState('')
   const [selectedStanica, setSelectedStanica] = useState<Stanica | null>(null)
@@ -41,29 +44,96 @@ export default function AdminPage() {
   const linijaSearchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const initialStanice: Stanica[] = [
-      { stanica_id: 1, naziv: 'Savski Trg', lat: 44.816, lng: 20.458, aktivna: true },
-      { stanica_id: 2, naziv: 'Trg Slavija', lat: 44.812, lng: 20.468, aktivna: true },
-      { stanica_id: 3, naziv: 'Vukov Spomenik', lat: 44.8055, lng: 20.4646, aktivna: true },
-      { stanica_id: 4, naziv: 'Zemun gornji grad', lat: 44.8439, lng: 20.4014, aktivna: true }
-    ]
+    const verifyAccess = async () => {
 
-    const initialLinije: Linija[] = [
-      { linija_id: 1, broj: '2', tip: 'tramvaj', ime_linije: 'Centar - Novi Beograd', aktivna: true },
-      { linija_id: 2, broj: '95', tip: 'autobus', ime_linije: 'Voždovac - Zeleni Venac', aktivna: true },
-      { linija_id: 3, broj: '7', tip: 'tramvaj', ime_linije: 'Blokovi - Ušće', aktivna: true },
-      { linija_id: 4, broj: '29', tip: 'trolejbus', ime_linije: 'Medakovic - Studentski trg', aktivna: true }
-    ]
+      const token = localStorage.getItem('token')
 
-    const initialKorisnici: Korisnik[] = [
-      { korisnik_id: 1, email: 'pera@beogradplus.rs', password_hash: '', ime: 'Pera', datum_kreiranja: new Date('2024-01-15'), uloga_id: 2 },
-      { korisnik_id: 2, email: 'mika@beogradplus.rs', password_hash: '', ime: 'Mika', datum_kreiranja: new Date('2024-01-16'), uloga_id: 2 }
-    ]
 
-    setStanice(initialStanice)
-    setLinije(initialLinije)
-    setKorisnici(initialKorisnici)
-  }, [])
+      if (!token) {
+
+        setPoruka('⛔ Niste ulogovani!')
+        setTimeout(() => {
+          router.push('/login')
+        }, 2000)
+        return
+      }
+
+      try {
+
+        const res = await fetch('/api/admin/verify', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (!res.ok) {
+          const data = await res.json()
+
+          setPoruka(data.error || '⛔ Nemate pristup admin panelu!')
+          setTimeout(() => {
+            router.push('/')
+          }, 2000)
+          return
+        }
+        const data = await res.json()
+
+        if (data.korisnik.uloga_id != 2) {
+
+          setPoruka('⛔ Nemate pristup admin panelu!')
+          setTimeout(() => {
+            router.push('/')
+          }, 2000)
+          return
+        }
+        setLoading(false)
+      } catch (error) {
+
+        setPoruka('⛔ Greška pri verifikaciji pristupa')
+        setTimeout(() => {
+          router.push('/login')
+        }, 2000)
+      }
+    }
+
+    verifyAccess()
+  }, [router])
+
+  useEffect(() => {
+    if (!loading) {
+      // TODO: Fetchuj sve stanice iz API-ja
+      // const fetchStanice = async () => {
+      //   const token = localStorage.getItem('token')
+      //   const res = await fetch('/api/stanice', {
+      //     headers: { 'Authorization': `Bearer ${token}` }
+      //   })
+      //   const data = await res.json()
+      //   setStanice(data)
+      // }
+      // fetchStanice()
+
+      // TODO: Fetchuj sve linije iz API-ja
+      // const fetchLinije = async () => {
+      //   const token = localStorage.getItem('token')
+      //   const res = await fetch('/api/linije', {
+      //     headers: { 'Authorization': `Bearer ${token}` }
+      //   })
+      //   const data = await res.json()
+      //   setLinije(data)
+      // }
+      // fetchLinije()
+
+      // TODO: Fetchuj sve korisnike iz API-ja
+      // const fetchKorisnici = async () => {
+      //   const token = localStorage.getItem('token')
+      //   const res = await fetch('/api/korisnici', {
+      //     headers: { 'Authorization': `Bearer ${token}` }
+      //   })
+      //   const data = await res.json()
+      //   setKorisnici(data)
+      // }
+      // fetchKorisnici()
+    }
+  }, [loading])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -79,81 +149,134 @@ export default function AdminPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const addStanica = () => {
-    const id = stanice.length ? Math.max(...stanice.map(s => s.stanica_id)) + 1 : 1
-    const nova: Stanica = {
-      stanica_id: id,
-      naziv: stanicaForm.naziv.trim(),
-      lat: Number(stanicaForm.lat),
-      lng: Number(stanicaForm.lng),
-      aktivna: Boolean(stanicaForm.aktivna)
-    }
-
-    if (!nova.naziv || Number.isNaN(nova.lat) || Number.isNaN(nova.lng)) {
+  const addStanica = async () => {
+    if (!stanicaForm.naziv || !stanicaForm.lat || !stanicaForm.lng) {
       setPoruka('Popunite validne podatke za stanicu')
       return
     }
 
-    setStanice(prev => [...prev, nova])
-    setStanicaForm({ naziv: '', lat: '', lng: '', aktivna: true })
-    setPoruka('Stanica dodata')
+    // TODO: Pošalji POST zahtev za dodavanje stanice
+    // const token = localStorage.getItem('token')
+    // const res = await fetch('/api/stanice', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': `Bearer ${token}`
+    //   },
+    //   body: JSON.stringify({
+    //     naziv: stanicaForm.naziv,
+    //     lat: Number(stanicaForm.lat),
+    //     lng: Number(stanicaForm.lng),
+    //     aktivna: stanicaForm.aktivna
+    //   })
+    // })
+    // const data = await res.json()
+    // if (res.ok) {
+    //   setPoruka('Stanica dodata')
+    //   setStanicaForm({ naziv: '', lat: '', lng: '', aktivna: true })
+    //   fetchStanice()
+    // } else {
+    //   setPoruka(data.error || 'Greška pri dodavanju stanice')
+    // }
   }
 
-  const deleteStanica = (stanica: Stanica) => {
-    setStanice(prev => prev.filter(s => s.stanica_id !== stanica.stanica_id))
-    setPoruka(`Stanica "${stanica.naziv}" obrisana`)
-    setDeleteStanicaSearch('')
-    setSelectedStanica(null)
-    setOpenStanicaSearch(false)
+  const deleteStanica = async (stanica: Stanica) => {
+    // TODO: Pošalji DELETE zahtev za brisanje stanice
+    // const token = localStorage.getItem('token')
+    // const res = await fetch(`/api/stanice?id=${stanica.stanica_id}`, {
+    //   method: 'DELETE',
+    //   headers: {
+    //     'Authorization': `Bearer ${token}`
+    //   }
+    // })
+    // if (res.ok) {
+    //   setPoruka(`Stanica "${stanica.naziv}" obrisana`)
+    //   setDeleteStanicaSearch('')
+    //   setSelectedStanica(null)
+    //   setOpenStanicaSearch(false)
+    //   fetchStanice()
+    // } else {
+    //   setPoruka('Greška pri brisanju stanice')
+    // }
   }
 
-  const addLinija = () => {
-    const id = linije.length ? Math.max(...linije.map(l => l.linija_id)) + 1 : 1
-    const nova: Linija = {
-      linija_id: id,
-      broj: linijaForm.broj.trim(),
-      tip: linijaForm.tip.trim(),
-      ime_linije: linijaForm.ime_linije.trim(),
-      aktivna: Boolean(linijaForm.aktivna)
-    }
-
-    if (!nova.broj || !nova.ime_linije) {
+  const addLinija = async () => {
+    if (!linijaForm.broj || !linijaForm.ime_linije) {
       setPoruka('Popunite validne podatke za liniju')
       return
     }
 
-    setLinije(prev => [...prev, nova])
-    setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })
-    setPoruka('Linija dodata')
+    // TODO: Pošalji POST zahtev za dodavanje linije
+    // const token = localStorage.getItem('token')
+    // const res = await fetch('/api/linije', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': `Bearer ${token}`
+    //   },
+    //   body: JSON.stringify({
+    //     broj: linijaForm.broj,
+    //     tip: linijaForm.tip,
+    //     ime_linije: linijaForm.ime_linije,
+    //     aktivna: linijaForm.aktivna
+    //   })
+    // })
+    // const data = await res.json()
+    // if (res.ok) {
+    //   setPoruka('Linija dodata')
+    //   setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })
+    //   fetchLinije()
+    // } else {
+    //   setPoruka(data.error || 'Greška pri dodavanju linije')
+    // }
   }
 
-  const deleteLinija = (linija: Linija) => {
-    setLinije(prev => prev.filter(l => l.linija_id !== linija.linija_id))
-    setPoruka(`Linija "${linija.broj} - ${linija.ime_linije}" obrisana`)
-    setDeleteLinijaSearch('')
-    setSelectedLinija(null)
-    setOpenLinijaSearch(false)
+  const deleteLinija = async (linija: Linija) => {
+    // TODO: Pošalji DELETE zahtev za brisanje linije
+    // const token = localStorage.getItem('token')
+    // const res = await fetch(`/api/linije?id=${linija.linija_id}`, {
+    //   method: 'DELETE',
+    //   headers: {
+    //     'Authorization': `Bearer ${token}`
+    //   }
+    // })
+    // if (res.ok) {
+    //   setPoruka(`Linija "${linija.broj} - ${linija.ime_linije}" obrisana`)
+    //   setDeleteLinijaSearch('')
+    //   setSelectedLinija(null)
+    //   setOpenLinijaSearch(false)
+    //   fetchLinije()
+    // } else {
+    //   setPoruka('Greška pri brisanju linije')
+    // }
   }
 
-  const promoteToAdmin = () => {
+  const promoteToAdmin = async () => {
     const email = promoteEmail.trim().toLowerCase()
-    
+
     if (!email) {
       setPoruka('Unesite email korisnika')
       return
     }
 
-    const idx = korisnici.findIndex(k => k.email.toLowerCase() === email)
-    if (idx === -1) {
-      setPoruka('Korisnik nije pronađen')
-      return
-    }
-
-    const updated = [...korisnici]
-    updated[idx] = { ...updated[idx], uloga_id: 1 }
-    setKorisnici(updated)
-    setPromoteEmail('')
-    setPoruka('Korisnik postavljen za admina')
+    // TODO: Pošalji PUT zahtev za promenu uloge korisnika
+    // const token = localStorage.getItem('token')
+    // const res = await fetch('/api/korisnici/promote', {
+    //   method: 'PUT',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Authorization': `Bearer ${token}`
+    //   },
+    //   body: JSON.stringify({ email, uloga_id: 2 })
+    // })
+    // const data = await res.json()
+    // if (res.ok) {
+    //   setPoruka('Korisnik postavljen za admina')
+    //   setPromoteEmail('')
+    //   fetchKorisnici()
+    // } else {
+    //   setPoruka(data.error || 'Greška pri promovanju korisnika')
+    // }
   }
 
   const filteredStanice = stanice.filter(s =>
@@ -164,6 +287,30 @@ export default function AdminPage() {
     l.broj.toLowerCase().includes(deleteLinijaSearch.toLowerCase()) ||
     l.ime_linije.toLowerCase().includes(deleteLinijaSearch.toLowerCase())
   )
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', background: '#f8f9fa' }}>
+        <div className="text-center">
+          {poruka ? (
+            <>
+              <div className="display-1 mb-3">⛔</div>
+              <h4 className="text-danger mb-3">{poruka}</h4>
+              <p className="text-muted">Preusmeravanje...</p>
+            </>
+          ) : (
+            <>
+              <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <p className="text-secondary">Proveravamo pristup...</p>
+            </>
+          )}
+        </div>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+      </div>
+    )
+  }
 
   return (
     <div className="d-flex" style={{ minHeight: '100vh', width: '100vw' }}>
@@ -194,7 +341,7 @@ export default function AdminPage() {
           </MapContainer>
         </div>
 
-        <div className="position-relative" style={{ 
+        <div className="position-relative" style={{
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
           height: '100%',
           overflowY: 'auto',
@@ -206,7 +353,7 @@ export default function AdminPage() {
             <div className="row justify-content-between align-items-center mb-3">
               <div className="col-auto">
                 <h1 className="h3 fw-bold text-dark">Admin panel</h1>
-                <p className="text-secondary mb-0" style={{fontSize: '0.9rem'}}>Upravljanje stanicama, linijama i korisnicima</p>
+                <p className="text-secondary mb-0" style={{ fontSize: '0.9rem' }}>Upravljanje stanicama, linijama i korisnicima</p>
               </div>
               <div className="col-auto">
                 <button onClick={() => window.location.href = '/'} className="btn btn-outline-dark btn-sm">Nazad na sajt</button>
@@ -216,7 +363,7 @@ export default function AdminPage() {
             <div className="row g-3 mb-3" style={{ position: 'relative', zIndex: 50 }}>
               <div className="col-md-6">
                 <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Dodaj stanicu</h5>
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Dodaj stanicu</h5>
                   <div className="mb-2">
                     <input
                       value={stanicaForm.naziv}
@@ -251,7 +398,7 @@ export default function AdminPage() {
                       checked={stanicaForm.aktivna}
                       onChange={e => setStanicaForm({ ...stanicaForm, aktivna: e.target.checked })}
                     />
-                    <label className="form-check-label" htmlFor="aktivnaStanica" style={{fontSize: '0.9rem'}}>Aktivna</label>
+                    <label className="form-check-label" htmlFor="aktivnaStanica" style={{ fontSize: '0.9rem' }}>Aktivna</label>
                   </div>
                   <div className="d-flex gap-2">
                     <button onClick={addStanica} className="btn btn-primary btn-sm">Dodaj</button>
@@ -267,7 +414,7 @@ export default function AdminPage() {
 
               <div className="col-md-6">
                 <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Dodaj liniju</h5>
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Dodaj liniju</h5>
                   <div className="mb-2">
                     <input
                       value={linijaForm.broj}
@@ -303,7 +450,7 @@ export default function AdminPage() {
                       checked={linijaForm.aktivna}
                       onChange={e => setLinijaForm({ ...linijaForm, aktivna: e.target.checked })}
                     />
-                    <label className="form-check-label" htmlFor="aktivnaLinija" style={{fontSize: '0.9rem'}}>Aktivna</label>
+                    <label className="form-check-label" htmlFor="aktivnaLinija" style={{ fontSize: '0.9rem' }}>Aktivna</label>
                   </div>
                   <div className="d-flex gap-2">
                     <button onClick={addLinija} className="btn btn-primary btn-sm">Dodaj</button>
@@ -321,7 +468,7 @@ export default function AdminPage() {
             <div className="row g-3 mb-3">
               <div className="col-md-6" style={{ position: 'relative', zIndex: 100 }}>
                 <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Obriši stanicu</h5>
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Obriši stanicu</h5>
                   <div ref={stanicaSearchRef} style={{ position: 'relative', zIndex: 9999 }}>
                     <div className="input-group input-group-sm mb-2">
                       <input
@@ -331,8 +478,8 @@ export default function AdminPage() {
                         value={deleteStanicaSearch}
                         onChange={e => setDeleteStanicaSearch(e.target.value)}
                       />
-                      <button 
-                        className="btn btn-outline-secondary" 
+                      <button
+                        className="btn btn-outline-secondary"
                         type="button"
                         onClick={() => setOpenStanicaSearch(true)}
                       >
@@ -353,29 +500,29 @@ export default function AdminPage() {
                         overflowY: 'auto',
                         zIndex: 9999
                       }}>
-                        <div className="p-2 fw-bold border-bottom" style={{fontSize: '0.85rem'}}>
+                        <div className="p-2 fw-bold border-bottom" style={{ fontSize: '0.85rem' }}>
                           {filteredStanice.length} rezultata
                         </div>
                         {filteredStanice.length > 0 ? (
                           filteredStanice.map(stanica => (
                             <div key={stanica.stanica_id}>
-                              <StationItem 
-                                stanica={stanica} 
+                              <StationItem
+                                stanica={stanica}
                                 onClick={() => {
                                   setSelectedStanica(stanica)
                                   setOpenStanicaSearch(false)
-                                }} 
+                                }}
                               />
                             </div>
                           ))
                         ) : (
-                          <div className="p-2 text-muted" style={{fontSize: '0.85rem'}}>Nema rezultata</div>
+                          <div className="p-2 text-muted" style={{ fontSize: '0.85rem' }}>Nema rezultata</div>
                         )}
                       </div>
                     )}
                   </div>
                   {selectedStanica && (
-                    <div className="alert alert-warning p-2 mb-2" style={{fontSize: '0.85rem'}}>
+                    <div className="alert alert-warning p-2 mb-2" style={{ fontSize: '0.85rem' }}>
                       Selektovano: <strong>{selectedStanica.naziv}</strong>
                     </div>
                   )}
@@ -397,7 +544,7 @@ export default function AdminPage() {
 
               <div className="col-md-6" style={{ position: 'relative', zIndex: 100 }}>
                 <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Obriši liniju</h5>
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Obriši liniju</h5>
                   <div ref={linijaSearchRef} style={{ position: 'relative', zIndex: 9999 }}>
                     <div className="input-group input-group-sm mb-2">
                       <input
@@ -407,8 +554,8 @@ export default function AdminPage() {
                         value={deleteLinijaSearch}
                         onChange={e => setDeleteLinijaSearch(e.target.value)}
                       />
-                      <button 
-                        className="btn btn-outline-secondary" 
+                      <button
+                        className="btn btn-outline-secondary"
                         type="button"
                         onClick={() => setOpenLinijaSearch(true)}
                       >
@@ -429,29 +576,29 @@ export default function AdminPage() {
                         overflowY: 'auto',
                         zIndex: 9999
                       }}>
-                        <div className="p-2 fw-bold border-bottom" style={{fontSize: '0.85rem'}}>
+                        <div className="p-2 fw-bold border-bottom" style={{ fontSize: '0.85rem' }}>
                           {filteredLinije.length} rezultata
                         </div>
                         {filteredLinije.length > 0 ? (
                           filteredLinije.map(linija => (
                             <div key={linija.linija_id}>
-                              <LineItem 
-                                linija={linija} 
+                              <LineItem
+                                linija={linija}
                                 onClick={() => {
                                   setSelectedLinija(linija)
                                   setOpenLinijaSearch(false)
-                                }} 
+                                }}
                               />
                             </div>
                           ))
                         ) : (
-                          <div className="p-2 text-muted" style={{fontSize: '0.85rem'}}>Nema rezultata</div>
+                          <div className="p-2 text-muted" style={{ fontSize: '0.85rem' }}>Nema rezultata</div>
                         )}
                       </div>
                     )}
                   </div>
                   {selectedLinija && (
-                    <div className="alert alert-warning p-2 mb-2" style={{fontSize: '0.85rem'}}>
+                    <div className="alert alert-warning p-2 mb-2" style={{ fontSize: '0.85rem' }}>
                       Selektovano: <strong>{selectedLinija.broj} - {selectedLinija.ime_linije}</strong>
                     </div>
                   )}
@@ -475,27 +622,36 @@ export default function AdminPage() {
             <div className="row g-3 mb-3">
               <div className="col-lg-6">
                 <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Korisnici</h5>
-                  <div className="list-group mb-3" style={{maxHeight: 200, overflowY: 'auto'}}>
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Korisnici</h5>
+                  <div className="list-group mb-3" style={{ maxHeight: 200, overflowY: 'auto' }}>
                     {korisnici.map(k => (
                       <div key={k.korisnik_id} className="list-group-item d-flex justify-content-between align-items-center p-2">
                         <div>
-                          <div className="fw-semibold" style={{fontSize: '0.85rem'}}>{k.ime} • {k.email}</div>
-                          <div className="text-secondary" style={{fontSize: '0.75rem'}}>
+                          <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>{k.ime} • {k.email}</div>
+                          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>
                             Uloga: {k.uloga_id === 1 ? 'Admin' : k.uloga_id === 2 ? 'Korisnik' : 'Gost'}
                           </div>
                         </div>
                         {k.uloga_id !== 1 && (
                           <button
-                            onClick={() => {
-                              const updated = korisnici.map(u =>
-                                u.korisnik_id === k.korisnik_id ? { ...u, uloga_id: 1 } : u
-                              )
-                              setKorisnici(updated)
-                              setPoruka('Korisnik postavljen za admina')
+                            onClick={async () => {
+                              // TODO: Pošalji PUT zahtev za promenu uloge
+                              // const token = localStorage.getItem('token')
+                              // const res = await fetch('/api/korisnici/promote', {
+                              //   method: 'PUT',
+                              //   headers: {
+                              //     'Content-Type': 'application/json',
+                              //     'Authorization': `Bearer ${token}`
+                              //   },
+                              //   body: JSON.stringify({ korisnik_id: k.korisnik_id, uloga_id: 2 })
+                              // })
+                              // if (res.ok) {
+                              //   setPoruka('Korisnik postavljen za admina')
+                              //   fetchKorisnici()
+                              // }
                             }}
                             className="btn btn-sm btn-outline-warning"
-                            style={{fontSize: '0.75rem'}}
+                            style={{ fontSize: '0.75rem' }}
                           >
                             Admin
                           </button>
@@ -521,30 +677,54 @@ export default function AdminPage() {
 
               <div className="col-lg-6">
                 <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{fontSize: '1rem'}}>Brze akcije</h5>
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Brze akcije</h5>
                   <div className="d-flex flex-column gap-2">
                     <button
-                      onClick={() => {
-                        setStanice([])
-                        setPoruka('Sve stanice obrisane')
+                      onClick={async () => {
+                        // TODO: Pošalji DELETE zahtev za brisanje svih stanica
+                        // const token = localStorage.getItem('token')
+                        // const res = await fetch('/api/stanice/delete-all', {
+                        //   method: 'DELETE',
+                        //   headers: { 'Authorization': `Bearer ${token}` }
+                        // })
+                        // if (res.ok) {
+                        //   setPoruka('Sve stanice obrisane')
+                        //   fetchStanice()
+                        // }
                       }}
                       className="btn btn-outline-danger btn-sm"
                     >
                       Obriši sve stanice
                     </button>
                     <button
-                      onClick={() => {
-                        setLinije([])
-                        setPoruka('Sve linije obrisane')
+                      onClick={async () => {
+                        // TODO: Pošalji DELETE zahtev za brisanje svih linija
+                        // const token = localStorage.getItem('token')
+                        // const res = await fetch('/api/linije/delete-all', {
+                        //   method: 'DELETE',
+                        //   headers: { 'Authorization': `Bearer ${token}` }
+                        // })
+                        // if (res.ok) {
+                        //   setPoruka('Sve linije obrisane')
+                        //   fetchLinije()
+                        // }
                       }}
                       className="btn btn-outline-danger btn-sm"
                     >
                       Obriši sve linije
                     </button>
                     <button
-                      onClick={() => {
-                        setKorisnici(prev => prev.map(u => ({ ...u, uloga_id: 2 })))
-                        setPoruka('Resetovane uloge korisnika')
+                      onClick={async () => {
+                        // TODO: Pošalji PUT zahtev za resetovanje svih uloga
+                        // const token = localStorage.getItem('token')
+                        // const res = await fetch('/api/korisnici/reset-roles', {
+                        //   method: 'PUT',
+                        //   headers: { 'Authorization': `Bearer ${token}` }
+                        // })
+                        // if (res.ok) {
+                        //   setPoruka('Resetovane uloge korisnika')
+                        //   fetchKorisnici()
+                        // }
                       }}
                       className="btn btn-outline-secondary btn-sm"
                     >
@@ -558,7 +738,7 @@ export default function AdminPage() {
             {poruka && (
               <div className="row mt-3">
                 <div className="col-12">
-                  <div className="alert alert-info text-center" style={{fontSize: '0.9rem'}}>{poruka}</div>
+                  <div className="alert alert-info text-center" style={{ fontSize: '0.9rem' }}>{poruka}</div>
                 </div>
               </div>
             )}
