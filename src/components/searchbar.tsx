@@ -4,7 +4,7 @@ import StationItem from '../components/station'
 import LineItem from '../components/line'
 import { Stanica, Linija } from '../types/modeli'
 
-export default function Searchbar() {
+export default function Searchbar({ onStationSelect }: { onStationSelect?: (stanica: Stanica) => void }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(5);
@@ -65,6 +65,14 @@ export default function Searchbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  function handleStationClick(stanica: Stanica) {
+    setSelectedStation(stanica);
+    setOpen(false);
+    if (onStationSelect) {
+      onStationSelect(stanica);
+    }
+  }
 
   return (
     <div
@@ -128,10 +136,7 @@ export default function Searchbar() {
                 <StationItem
                   key={stanica.stanica_id}
                   stanica={stanica}
-                  onClick={() => {
-                    setSelectedStation(stanica);
-                    setOpen(false);
-                  }}
+                  onClick={() => handleStationClick(stanica)}
                 />
               ))}
             </>

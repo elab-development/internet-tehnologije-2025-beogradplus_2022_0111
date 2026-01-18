@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         const parametri = Object.fromEntries(request.nextUrl.searchParams);
         const _naziv = parametri["naziv"];
 
-        let query = supabase.from('stanica').select('*');
+        let query = supabase.from('stanica').select('*').range(0,9999);
         if (_naziv)
             query = query.like('naziv', `%${_naziv}%`);
         const { data, error } = await query;
