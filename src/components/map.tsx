@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 function createStationIcon(zoomLevel: number) {
   const baseSize = 18;
   const size = Math.max(baseSize, baseSize + (zoomLevel - 13) * 3);
-  
+
   return L.divIcon({
     html: `
       <div style="
@@ -26,8 +26,8 @@ function createStationIcon(zoomLevel: number) {
       </div>
     `,
     iconSize: [size, size],
-    iconAnchor: [size/2, size/2],
-    popupAnchor: [0, -size/2],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
     className: ''
   });
 }
@@ -36,7 +36,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
@@ -45,7 +45,7 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 function MapCenterTracker({ onCenterChange, onZoomChange }: { onCenterChange: (center: [number, number]) => void, onZoomChange: (zoom: number) => void }) {
-  const map = useMapEvents({
+  useMapEvents({
     moveend: (e) => {
       const center = e.target.getCenter();
       onCenterChange([center.lat, center.lng]);
@@ -70,13 +70,15 @@ export default function Map({
   sirina = '100%',
   zoom = 14,
   center = [44.7866, 20.4489],
-  stanice = []
+  stanice = [],
+  onMarkerClick
 }: {
   visina?: string,
   sirina?: string,
   zoom?: number,
   center?: [number, number],
-  stanice?: any[]
+  stanice?: any[],
+  onMarkerClick?: (stanica: any) => void
 }) {
   const [currentCenter, setCurrentCenter] = useState<[number, number]>(center);
   const [currentZoom, setCurrentZoom] = useState<number>(zoom);
@@ -131,6 +133,9 @@ export default function Map({
             key={stanica.stanica_id}
             position={[stanica.lat, stanica.lng]}
             icon={createStationIcon(currentZoom)}
+            eventHandlers={{
+              click: () => onMarkerClick && onMarkerClick(stanica)
+            }}
           />
         ))}
       </MapContainer>
@@ -146,17 +151,15 @@ export default function Map({
         }}
       >
         <svg width="30" height="40" viewBox="0 0 30 40">
-          <path 
-            d="M15 0C8.373 0 3 5.373 3 12c0 8.25 12 28 12 28s12-19.75 12-28c0-6.627-5.373-12-12-12z" 
-            fill="#ef4444" 
-            stroke="white" 
+          <path
+            d="M15 0C8.373 0 3 5.373 3 12c0 8.25 12 28 12 28s12-19.75 12-28c0-6.627-5.373-12-12-12z"
+            fill="#ef4444"
+            stroke="white"
             strokeWidth="2"
           />
-          <circle cx="15" cy="12" r="4" fill="white"/>
+          <circle cx="15" cy="12" r="4" fill="white" />
         </svg>
       </div>
-
-    
     </div>
   );
 }

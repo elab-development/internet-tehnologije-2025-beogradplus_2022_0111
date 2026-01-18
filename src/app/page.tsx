@@ -17,12 +17,13 @@ export default function Home() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([44.7866, 20.4489]);
   const [mapZoom, setMapZoom] = useState(14);
   const [stanice, setStanice] = useState<Stanica[]>([]);
+  const [selectedStation, setSelectedStation] = useState<Stanica | null>(null);
 
   useEffect(() => {
     const fetchStanice = async () => {
       const res = await fetch('/api/stations');
       const data = await res.json();
-      setStanice(data);  
+      setStanice(data);
     };
     fetchStanice();
   }, []);
@@ -34,9 +35,13 @@ export default function Home() {
   }, [router]);
 
   function handleStationSelect(stanica: Stanica) {
-
+    setSelectedStation(stanica);
     setMapCenter([stanica.lat, stanica.lng]);
     setMapZoom(17);
+  }
+
+  function handleClearSelectedStation() {
+    setSelectedStation(null);
   }
 
   return (
@@ -58,7 +63,8 @@ export default function Home() {
             sirina="100%"
             center={mapCenter}
             zoom={mapZoom}
-            stanice = {stanice}
+            stanice={stanice}
+            onMarkerClick={(s: Stanica) => handleStationSelect(s)}
           />
         </div>
         <div
@@ -69,7 +75,11 @@ export default function Home() {
             zIndex: 9999
           }}
         >
-          <Searchbar onStationSelect={handleStationSelect} />
+          <Searchbar
+            onStationSelect={handleStationSelect}
+            selectedStation={selectedStation}
+            onClearSelectedStation={handleClearSelectedStation}
+          />
         </div>
       </div>
     </div>

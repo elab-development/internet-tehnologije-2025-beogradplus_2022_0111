@@ -1,38 +1,43 @@
 'use client'
 import React, { useState, useEffect, useRef } from "react";
-import StationItem from '../components/station'
-import LineItem from '../components/line'
-import { Stanica, Linija } from '../types/modeli'
+import StationItem from '../components/station';
+import LineItem from '../components/line';
+import { Stanica, Linija } from '../types/modeli';
 
-export default function Searchbar({ onStationSelect }: { onStationSelect?: (stanica: Stanica) => void }) {
+export default function Searchbar({
+  onStationSelect,
+  selectedStation,
+  onClearSelectedStation
+}: {
+  onStationSelect?: (stanica: Stanica) => void,
+  selectedStation?: Stanica | null,
+  onClearSelectedStation?: () => void
+}) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(5);
-  const [selectedStation, setSelectedStation] = useState<Stanica | null>(null);
   const [stanice, setStanice] = useState<Stanica[]>([]);
   const [linije, setLinije] = useState<Linija[]>([]);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-
     const fetchStanice = async () => {
-      const res = await fetch('/api/stations')
-      const data = await res.json()
-      setStanice(data)
-    }
-    fetchStanice()
+      const res = await fetch('/api/stations');
+      const data = await res.json();
+      setStanice(data);
+    };
+    fetchStanice();
 
     const fetchLinije = async () => {
-      const res = await fetch('/api/lines')
-      const data = await res.json()
-      setLinije(data)
-    }
-    fetchLinije()
+      const res = await fetch('/api/lines');
+      const data = await res.json();
+      setLinije(data);
+    };
+    fetchLinije();
   }, []);
 
   function handleSearch() {
-    setSelectedStation(null);
     setOpen(true);
     setLimit(5);
   }
@@ -58,7 +63,6 @@ export default function Searchbar({ onStationSelect }: { onStationSelect?: (stan
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setOpen(false);
-        setSelectedStation(null);
       }
     }
 
@@ -67,11 +71,8 @@ export default function Searchbar({ onStationSelect }: { onStationSelect?: (stan
   }, []);
 
   function handleStationClick(stanica: Stanica) {
-    setSelectedStation(stanica);
     setOpen(false);
-    if (onStationSelect) {
-      onStationSelect(stanica);
-    }
+    onStationSelect && onStationSelect(stanica);
   }
 
   return (
@@ -188,7 +189,7 @@ export default function Searchbar({ onStationSelect }: { onStationSelect?: (stan
             <h6>{selectedStation.naziv}</h6>
             <button
               className="btn-close"
-              onClick={() => setSelectedStation(null)}
+              onClick={() => onClearSelectedStation && onClearSelectedStation()}
             />
           </div>
 
