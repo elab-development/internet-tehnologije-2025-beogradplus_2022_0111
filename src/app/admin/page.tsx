@@ -12,25 +12,21 @@ import { Stanica, Linija, Korisnik } from '../../types/modeli'
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-
   const [stanice, setStanice] = useState<Stanica[]>([])
   const [linije, setLinije] = useState<Linija[]>([])
   const [korisnici, setKorisnici] = useState<Korisnik[]>([])
-
   const [stanicaForm, setStanicaForm] = useState({
     naziv: '',
     lat: '',
     lng: '',
     aktivna: true
   })
-
   const [linijaForm, setLinijaForm] = useState({
     broj: '',
     tip: 'autobus',
     ime_linije: '',
     aktivna: true
   })
-
   const [deleteStanicaSearch, setDeleteStanicaSearch] = useState('')
   const [deleteLinijaSearch, setDeleteLinijaSearch] = useState('')
   const [selectedStanica, setSelectedStanica] = useState<Stanica | null>(null)
@@ -39,36 +35,30 @@ export default function AdminPage() {
   const [openLinijaSearch, setOpenLinijaSearch] = useState(false)
   const [promoteEmail, setPromoteEmail] = useState('')
   const [poruka, setPoruka] = useState('')
-
   const stanicaSearchRef = useRef<HTMLDivElement>(null)
   const linijaSearchRef = useRef<HTMLDivElement>(null)
 
+  const [linijaStations, setLinijaStations] = useState<Stanica[]>([])
+  const [stationIdInput, setStationIdInput] = useState('')
+
   useEffect(() => {
     const verifyAccess = async () => {
-
       const token = localStorage.getItem('token')
-
-
       if (!token) {
-
         setPoruka('⛔ Niste ulogovani!')
         setTimeout(() => {
           router.push('/login')
         }, 2000)
         return
       }
-
       try {
-
         const res = await fetch('/api/admin/verify', {
           headers: {
-            'Authorization': `Bearer ${token}`
+            Authorization: `Bearer ${token}`
           }
         })
-
         if (!res.ok) {
           const data = await res.json()
-
           setPoruka(data.error || '⛔ Nemate pristup admin panelu!')
           setTimeout(() => {
             router.push('/')
@@ -76,9 +66,7 @@ export default function AdminPage() {
           return
         }
         const data = await res.json()
-
         if (data.korisnik.uloga_id != 2) {
-
           setPoruka('⛔ Nemate pristup admin panelu!')
           setTimeout(() => {
             router.push('/')
@@ -87,51 +75,64 @@ export default function AdminPage() {
         }
         setLoading(false)
       } catch (error) {
-
         setPoruka('⛔ Greška pri verifikaciji pristupa')
         setTimeout(() => {
           router.push('/login')
         }, 2000)
       }
     }
-
     verifyAccess()
   }, [router])
 
+  const tipToCode = (tip: string) => {
+    return tip === 'tramvaj' ? 2 : tip === 'trolejbus' ? 3 : 1
+  }
+
+  const codeToTip = (code: number | string) => {
+    if (typeof code === 'number') return code === 2 ? 'tramvaj' : code === 3 ? 'trolejbus' : 'autobus'
+    return code
+  }
+
   useEffect(() => {
     if (!loading) {
-      // TODO: Fetchuj sve stanice iz API-ja
-      // const fetchStanice = async () => {
-      //   const token = localStorage.getItem('token')
-      //   const res = await fetch('/api/stanice', {
-      //     headers: { 'Authorization': `Bearer ${token}` }
-      //   })
-      //   const data = await res.json()
-      //   setStanice(data)
-      // }
-      // fetchStanice()
+      const token = localStorage.getItem('token')
+      const headers: Record<string, string> = {}
+      if (token) headers.Authorization = `Bearer ${token}`
 
-      // TODO: Fetchuj sve linije iz API-ja
-      // const fetchLinije = async () => {
-      //   const token = localStorage.getItem('token')
-      //   const res = await fetch('/api/linije', {
-      //     headers: { 'Authorization': `Bearer ${token}` }
-      //   })
-      //   const data = await res.json()
-      //   setLinije(data)
-      // }
-      // fetchLinije()
+      const fetchStanice = async () => {
+        try {
+          const res = await fetch('/api/stations', { headers })
+          if (res.ok) {
+            const data = await res.json()
+            setStanice(data)
+          }
+        } catch {}
+      }
 
-      // TODO: Fetchuj sve korisnike iz API-ja
-      // const fetchKorisnici = async () => {
-      //   const token = localStorage.getItem('token')
-      //   const res = await fetch('/api/korisnici', {
-      //     headers: { 'Authorization': `Bearer ${token}` }
-      //   })
-      //   const data = await res.json()
-      //   setKorisnici(data)
-      // }
-      // fetchKorisnici()
+      const fetchLinije = async () => {
+        try {
+          const res = await fetch('/api/linije', { headers })
+          if (res.ok) {
+            const data = await res.json()
+            const normalized = Array.isArray(data) ? data.map((l: any) => ({ ...l, tip: codeToTip(l.tip) })) : data
+            setLinije(normalized)
+          }
+        } catch {}
+      }
+
+      const fetchKorisnici = async () => {
+        try {
+          const res = await fetch('/api/korisnici', { headers })
+          if (res.ok) {
+            const data = await res.json()
+            setKorisnici(data)
+          }
+        } catch {}
+      }
+
+      fetchStanice()
+      fetchLinije()
+      fetchKorisnici()
     }
   }, [loading])
 
@@ -144,7 +145,6 @@ export default function AdminPage() {
         setOpenLinijaSearch(false)
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
@@ -154,50 +154,119 @@ export default function AdminPage() {
       setPoruka('Popunite validne podatke za stanicu')
       return
     }
-
-    // TODO: Pošalji POST zahtev za dodavanje stanice
-    // const token = localStorage.getItem('token')
-    // const res = await fetch('/api/stanice', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${token}`
-    //   },
-    //   body: JSON.stringify({
-    //     naziv: stanicaForm.naziv,
-    //     lat: Number(stanicaForm.lat),
-    //     lng: Number(stanicaForm.lng),
-    //     aktivna: stanicaForm.aktivna
-    //   })
-    // })
-    // const data = await res.json()
-    // if (res.ok) {
-    //   setPoruka('Stanica dodata')
-    //   setStanicaForm({ naziv: '', lat: '', lng: '', aktivna: true })
-    //   fetchStanice()
-    // } else {
-    //   setPoruka(data.error || 'Greška pri dodavanju stanice')
-    // }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+      const res = await fetch('/api/stations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          naziv: stanicaForm.naziv,
+          lat: Number(stanicaForm.lat),
+          lng: Number(stanicaForm.lng),
+          aktivna: stanicaForm.aktivna
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setPoruka('Stanica dodata')
+        setStanicaForm({ naziv: '', lat: '', lng: '', aktivna: true })
+        const refresh = await fetch('/api/stations', { headers: { Authorization: `Bearer ${token}` } })
+        if (refresh.ok) setStanice(await refresh.json())
+      } else {
+        setPoruka(data.error || 'Greška pri dodavanju stanice')
+      }
+    } catch {
+      setPoruka('Greška pri dodavanju stanice')
+    }
   }
 
   const deleteStanica = async (stanica: Stanica) => {
-    // TODO: Pošalji DELETE zahtev za brisanje stanice
-    // const token = localStorage.getItem('token')
-    // const res = await fetch(`/api/stanice?id=${stanica.stanica_id}`, {
-    //   method: 'DELETE',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`
-    //   }
-    // })
-    // if (res.ok) {
-    //   setPoruka(`Stanica "${stanica.naziv}" obrisana`)
-    //   setDeleteStanicaSearch('')
-    //   setSelectedStanica(null)
-    //   setOpenStanicaSearch(false)
-    //   fetchStanice()
-    // } else {
-    //   setPoruka('Greška pri brisanju stanice')
-    // }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+      const res = await fetch(`/api/stations?id=${stanica.stanica_id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      if (res.ok) {
+        setPoruka(`Stanica "${stanica.naziv}" obrisana`)
+        setDeleteStanicaSearch('')
+        setSelectedStanica(null)
+        setOpenStanicaSearch(false)
+        const refresh = await fetch('/api/stations', { headers: { Authorization: `Bearer ${token}` } })
+        if (refresh.ok) setStanice(await refresh.json())
+      } else {
+        setPoruka('Greška pri brisanju stanice')
+      }
+    } catch {
+      setPoruka('Greška pri brisanju stanice')
+    }
+  }
+
+  const handleAddStationById = async (idStr: string) => {
+    const id = Number((idStr || '').toString().trim())
+    if (!id) {
+      setPoruka('Unesite validan ID stanice')
+      return
+    }
+    if (linijaStations.some(s => s.stanica_id === id)) {
+      setPoruka('Stanica je već u listi')
+      setStationIdInput('')
+      return
+    }
+    const local = stanice.find(s => s.stanica_id === id)
+    if (local) {
+      setLinijaStations(prev => [...prev, local])
+      setStationIdInput('')
+      setPoruka(`Dodato: ${local.naziv || `ID ${id}`}`)
+      return
+    }
+    try {
+      const token = localStorage.getItem('token')
+      const headers: Record<string, string> = {}
+      if (token) headers.Authorization = `Bearer ${token}`
+      const res = await fetch(`/api/stations?id=${id}`, { headers })
+      if (!res.ok) {
+        setPoruka('Stanica ne postoji')
+        return
+      }
+      const data = await res.json()
+      let stanicaObj: Stanica | undefined
+      if (Array.isArray(data)) stanicaObj = data.find((d: any) => d.stanica_id === id) ?? data[0]
+      else stanicaObj = data
+      if (!stanicaObj || stanicaObj.stanica_id !== id) {
+        setPoruka('Stanica ne postoji')
+        return
+      }
+      setLinijaStations(prev => [...prev, stanicaObj])
+      setStationIdInput('')
+      setPoruka(`Dodato: ${stanicaObj.naziv || `ID ${id}`}`)
+    } catch {
+      setPoruka('Greška pri proveri stanice')
+    }
+  }
+
+  const handleStationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddStationById(stationIdInput)
+    }
+  }
+
+  const removeStationFromList = (id: number) => {
+    setLinijaStations(prev => prev.filter(s => s.stanica_id !== id))
   }
 
   const addLinija = async () => {
@@ -205,78 +274,120 @@ export default function AdminPage() {
       setPoruka('Popunite validne podatke za liniju')
       return
     }
-
-    // TODO: Pošalji POST zahtev za dodavanje linije
-    // const token = localStorage.getItem('token')
-    // const res = await fetch('/api/linije', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${token}`
-    //   },
-    //   body: JSON.stringify({
-    //     broj: linijaForm.broj,
-    //     tip: linijaForm.tip,
-    //     ime_linije: linijaForm.ime_linije,
-    //     aktivna: linijaForm.aktivna
-    //   })
-    // })
-    // const data = await res.json()
-    // if (res.ok) {
-    //   setPoruka('Linija dodata')
-    //   setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })
-    //   fetchLinije()
-    // } else {
-    //   setPoruka(data.error || 'Greška pri dodavanju linije')
-    // }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+      const checkRes = await fetch(`/api/lines?broj=${encodeURIComponent(linijaForm.broj)}`, { headers })
+      if (checkRes.ok) {
+        const existing = await checkRes.json()
+        if (Array.isArray(existing) ? existing.length > 0 : (existing && Object.keys(existing).length > 0)) {
+          setPoruka('Linija sa tim brojem već postoji')
+          return
+        }
+      }
+      const tipCode = tipToCode(linijaForm.tip)
+      const res = await fetch('/api/lines', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          broj: linijaForm.broj,
+          tip: tipCode,
+          ime_linije: linijaForm.ime_linije,
+          aktivna: linijaForm.aktivna,
+          stanice: linijaStations.map(s => s.stanica_id)
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setPoruka('Linija dodata')
+        setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })
+        setLinijaStations([])
+        setStationIdInput('')
+        const refresh = await fetch('/api/lines', { headers })
+        if (refresh.ok) {
+          const refreshed = await refresh.json()
+          const normalized = Array.isArray(refreshed) ? refreshed.map((l: any) => ({ ...l, tip: codeToTip(l.tip) })) : refreshed
+          setLinije(normalized)
+        }
+      } else {
+        setPoruka(data.error || 'Greška pri dodavanju linije')
+      }
+    } catch {
+      setPoruka('Greška pri dodavanju linije')
+    }
   }
 
   const deleteLinija = async (linija: Linija) => {
-    // TODO: Pošalji DELETE zahtev za brisanje linije
-    // const token = localStorage.getItem('token')
-    // const res = await fetch(`/api/linije?id=${linija.linija_id}`, {
-    //   method: 'DELETE',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`
-    //   }
-    // })
-    // if (res.ok) {
-    //   setPoruka(`Linija "${linija.broj} - ${linija.ime_linije}" obrisana`)
-    //   setDeleteLinijaSearch('')
-    //   setSelectedLinija(null)
-    //   setOpenLinijaSearch(false)
-    //   fetchLinije()
-    // } else {
-    //   setPoruka('Greška pri brisanju linije')
-    // }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+      const res = await fetch(`/api/lines?id=${linija.linija_id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      if (res.ok) {
+        setPoruka(`Linija "${linija.broj} - ${linija.ime_linije}" obrisana`)
+        setDeleteLinijaSearch('')
+        setSelectedLinija(null)
+        setOpenLinijaSearch(false)
+        const refresh = await fetch('/api/lines', { headers: { Authorization: `Bearer ${token}` } })
+        if (refresh.ok) {
+          const refreshed = await refresh.json()
+          const normalized = Array.isArray(refreshed) ? refreshed.map((l: any) => ({ ...l, tip: codeToTip(l.tip) })) : refreshed
+          setLinije(normalized)
+        }
+      } else {
+        setPoruka('Greška pri brisanju linije')
+      }
+    } catch {
+      setPoruka('Greška pri brisanju linije')
+    }
   }
 
   const promoteToAdmin = async () => {
     const email = promoteEmail.trim().toLowerCase()
-
     if (!email) {
       setPoruka('Unesite email korisnika')
       return
     }
-
-    // TODO: Pošalji PUT zahtev za promenu uloge korisnika
-    // const token = localStorage.getItem('token')
-    // const res = await fetch('/api/korisnici/promote', {
-    //   method: 'PUT',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${token}`
-    //   },
-    //   body: JSON.stringify({ email, uloga_id: 2 })
-    // })
-    // const data = await res.json()
-    // if (res.ok) {
-    //   setPoruka('Korisnik postavljen za admina')
-    //   setPromoteEmail('')
-    //   fetchKorisnici()
-    // } else {
-    //   setPoruka(data.error || 'Greška pri promovanju korisnika')
-    // }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+      const res = await fetch('/api/korisnici/promote', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, uloga_id: 2 })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setPoruka('Korisnik postavljen za admina')
+        setPromoteEmail('')
+        const refresh = await fetch('/api/korisnici', { headers: { Authorization: `Bearer ${token}` } })
+        if (refresh.ok) setKorisnici(await refresh.json())
+      } else {
+        setPoruka(data.error || 'Greška pri promovanju korisnika')
+      }
+    } catch {
+      setPoruka('Greška pri promovanju korisnika')
+    }
   }
 
   const filteredStanice = stanice.filter(s =>
@@ -442,6 +553,39 @@ export default function AdminPage() {
                       <option value="trolejbus">Trolejbus</option>
                     </select>
                   </div>
+
+                  <div className="input-group input-group-sm mb-2">
+                    <input
+                      value={stationIdInput}
+                      onChange={e => setStationIdInput(e.target.value)}
+                      onKeyDown={handleStationKeyDown}
+                      className="form-control"
+                      placeholder="Unesite ID stanice i pritisnite Enter"
+                    />
+                    <button
+                      className="btn btn-outline-secondary"
+                      type="button"
+                      onClick={() => handleAddStationById(stationIdInput)}
+                    >
+                      Dodaj
+                    </button>
+                  </div>
+
+                  <div className="mb-2" style={{ maxHeight: 120, overflowY: 'auto' }}>
+                    {linijaStations.length === 0 ? (
+                      <div className="text-muted" style={{ fontSize: '0.85rem' }}>Nema dodatih stanica</div>
+                    ) : (
+                      <ul className="list-group list-group-flush">
+                        {linijaStations.map(s => (
+                          <li key={s.stanica_id} className="list-group-item d-flex justify-content-between align-items-center p-2">
+                            <div style={{ fontSize: '0.85rem' }}>{s.naziv || `ID ${s.stanica_id}`}</div>
+                            <button className="btn btn-sm btn-outline-danger" onClick={() => removeStationFromList(s.stanica_id)}>Ukloni</button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
                   <div className="form-check form-switch mb-2">
                     <input
                       className="form-check-input"
@@ -455,7 +599,11 @@ export default function AdminPage() {
                   <div className="d-flex gap-2">
                     <button onClick={addLinija} className="btn btn-primary btn-sm">Dodaj</button>
                     <button
-                      onClick={() => setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })}
+                      onClick={() => {
+                        setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })
+                        setLinijaStations([])
+                        setStationIdInput('')
+                      }}
                       className="btn btn-outline-secondary btn-sm"
                     >
                       Resetuj
@@ -635,20 +783,23 @@ export default function AdminPage() {
                         {k.uloga_id !== 1 && (
                           <button
                             onClick={async () => {
-                              // TODO: Pošalji PUT zahtev za promenu uloge
-                              // const token = localStorage.getItem('token')
-                              // const res = await fetch('/api/korisnici/promote', {
-                              //   method: 'PUT',
-                              //   headers: {
-                              //     'Content-Type': 'application/json',
-                              //     'Authorization': `Bearer ${token}`
-                              //   },
-                              //   body: JSON.stringify({ korisnik_id: k.korisnik_id, uloga_id: 2 })
-                              // })
-                              // if (res.ok) {
-                              //   setPoruka('Korisnik postavljen za admina')
-                              //   fetchKorisnici()
-                              // }
+                              try {
+                                const token = localStorage.getItem('token')
+                                if (!token) return
+                                const res = await fetch('/api/korisnici/promote', {
+                                  method: 'PUT',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    Authorization: `Bearer ${token}`
+                                  },
+                                  body: JSON.stringify({ korisnik_id: k.korisnik_id, uloga_id: 2 })
+                                })
+                                if (res.ok) {
+                                  setPoruka('Korisnik postavljen za admina')
+                                  const refresh = await fetch('/api/korisnici', { headers: { Authorization: `Bearer ${token}` } })
+                                  if (refresh.ok) setKorisnici(await refresh.json())
+                                }
+                              } catch {}
                             }}
                             className="btn btn-sm btn-outline-warning"
                             style={{ fontSize: '0.75rem' }}
@@ -681,16 +832,19 @@ export default function AdminPage() {
                   <div className="d-flex flex-column gap-2">
                     <button
                       onClick={async () => {
-                        // TODO: Pošalji DELETE zahtev za brisanje svih stanica
-                        // const token = localStorage.getItem('token')
-                        // const res = await fetch('/api/stanice/delete-all', {
-                        //   method: 'DELETE',
-                        //   headers: { 'Authorization': `Bearer ${token}` }
-                        // })
-                        // if (res.ok) {
-                        //   setPoruka('Sve stanice obrisane')
-                        //   fetchStanice()
-                        // }
+                        try {
+                          const token = localStorage.getItem('token')
+                          if (!token) return
+                          const res = await fetch('/api/stations/delete-all', {
+                            method: 'DELETE',
+                            headers: { Authorization: `Bearer ${token}` }
+                          })
+                          if (res.ok) {
+                            setPoruka('Sve stanice obrisane')
+                            const refresh = await fetch('/api/stations', { headers: { Authorization: `Bearer ${token}` } })
+                            if (refresh.ok) setStanice(await refresh.json())
+                          }
+                        } catch {}
                       }}
                       className="btn btn-outline-danger btn-sm"
                     >
@@ -698,16 +852,19 @@ export default function AdminPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        // TODO: Pošalji DELETE zahtev za brisanje svih linija
-                        // const token = localStorage.getItem('token')
-                        // const res = await fetch('/api/linije/delete-all', {
-                        //   method: 'DELETE',
-                        //   headers: { 'Authorization': `Bearer ${token}` }
-                        // })
-                        // if (res.ok) {
-                        //   setPoruka('Sve linije obrisane')
-                        //   fetchLinije()
-                        // }
+                        try {
+                          const token = localStorage.getItem('token')
+                          if (!token) return
+                          const res = await fetch('/api/lines/delete-all', {
+                            method: 'DELETE',
+                            headers: { Authorization: `Bearer ${token}` }
+                          })
+                          if (res.ok) {
+                            setPoruka('Sve linije obrisane')
+                            const refresh = await fetch('/api/lines', { headers: { Authorization: `Bearer ${token}` } })
+                            if (refresh.ok) setLinije(await refresh.json())
+                          }
+                        } catch {}
                       }}
                       className="btn btn-outline-danger btn-sm"
                     >
@@ -715,16 +872,19 @@ export default function AdminPage() {
                     </button>
                     <button
                       onClick={async () => {
-                        // TODO: Pošalji PUT zahtev za resetovanje svih uloga
-                        // const token = localStorage.getItem('token')
-                        // const res = await fetch('/api/korisnici/reset-roles', {
-                        //   method: 'PUT',
-                        //   headers: { 'Authorization': `Bearer ${token}` }
-                        // })
-                        // if (res.ok) {
-                        //   setPoruka('Resetovane uloge korisnika')
-                        //   fetchKorisnici()
-                        // }
+                        try {
+                          const token = localStorage.getItem('token')
+                          if (!token) return
+                          const res = await fetch('/api/korisnici/reset-roles', {
+                            method: 'PUT',
+                            headers: { Authorization: `Bearer ${token}` }
+                          })
+                          if (res.ok) {
+                            setPoruka('Resetovane uloge korisnika')
+                            const refresh = await fetch('/api/korisnici', { headers: { Authorization: `Bearer ${token}` } })
+                            if (refresh.ok) setKorisnici(await refresh.json())
+                          }
+                        } catch {}
                       }}
                       className="btn btn-outline-secondary btn-sm"
                     >

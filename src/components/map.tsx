@@ -4,23 +4,33 @@ import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-function createStationIcon(zoomLevel: number) {
+function createStationIcon(zoomLevel: number, aktivna: boolean = true) {
   const baseSize = 18;
   const size = Math.max(baseSize, baseSize + (zoomLevel - 13) * 3);
+
+  const bg = aktivna
+    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' // blue gradient
+    : 'linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%)'; // gray gradient
+
+  const shadow = aktivna
+    ? '0 2px 8px rgba(59, 130, 246, 0.5), 0 0 0 3px white'
+    : '0 2px 6px rgba(60, 64, 67, 0.18), 0 0 0 3px white';
+
+  const svgFill = aktivna ? 'white' : '#374151'; // white on blue, dark gray on light gray
 
   return L.divIcon({
     html: `
       <div style="
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: ${bg};
         border-radius: 50%;
         width: ${size}px;
         height: ${size}px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5), 0 0 0 3px white;
+        box-shadow: ${shadow};
       ">
-        <svg width="${size * 0.65}" height="${size * 0.65}" viewBox="0 0 512 512" fill="white">
+        <svg width="${size * 0.65}" height="${size * 0.65}" viewBox="0 0 512 512" fill="${svgFill}" xmlns="http://www.w3.org/2000/svg">
           <path d="M488 128h-8V80c0-44.8-99.2-80-224-80S32 35.2 32 80v48h-8c-13.25 0-24 10.74-24 24v80c0 13.25 10.75 24 24 24h8v160c0 17.67 14.33 32 32 32v32c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32v-32h192v32c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32v-32h6.4c16 0 25.6-14.4 25.6-32V256h8c13.25 0 24-10.75 24-24v-80c0-13.26-10.75-24-24-24zM160 72c0-4.42 3.58-8 8-8h176c4.42 0 8 3.58 8 8v16c0 4.42-3.58 8-8 8H168c-4.42 0-8-3.58-8-8V72zm-48 328c-17.67 0-32-14.33-32-32s14.33-32 32-32 32 14.33 32 32-14.33 32-32 32zm128-112H128c-17.67 0-32-14.33-32-32v-96c0-17.67 14.33-32 32-32h112v160zm128 112c-17.67 0-32-14.33-32-32s14.33-32 32-32 32 14.33 32 32-14.33 32-32 32zm48-112h-112V128h112c17.67 0 32 14.33 32 32v96c0 17.67-14.33 32-32 32z"/>
         </svg>
       </div>
@@ -132,7 +142,7 @@ export default function Map({
           <Marker
             key={stanica.stanica_id}
             position={[stanica.lat, stanica.lng]}
-            icon={createStationIcon(currentZoom)}
+            icon={createStationIcon(currentZoom, !!stanica.aktivna)}
             eventHandlers={{
               click: () => onMarkerClick && onMarkerClick(stanica)
             }}
