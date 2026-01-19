@@ -23,7 +23,7 @@ export interface Stanica {
 export interface Linija {
   linija_id: number;
   broj: string;
-  tip: string;
+  tip: number;
   ime_linije: string;
   aktivna: boolean;
 }

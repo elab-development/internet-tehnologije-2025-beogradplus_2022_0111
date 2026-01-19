@@ -15,7 +15,10 @@ export default function Searchbar({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [limit, setLimit] = useState(5);
+
+  const [limitStanice, setLimitStanice] = useState(5);
+  const [limitLinije, setLimitLinije] = useState(5);
+
   const [stanice, setStanice] = useState<Stanica[]>([]);
   const [linije, setLinije] = useState<Linija[]>([]);
 
@@ -27,19 +30,21 @@ export default function Searchbar({
       const data = await res.json();
       setStanice(data);
     };
-    fetchStanice();
 
     const fetchLinije = async () => {
       const res = await fetch('/api/lines');
       const data = await res.json();
       setLinije(data);
     };
+
+    fetchStanice();
     fetchLinije();
   }, []);
 
   function handleSearch() {
     setOpen(true);
-    setLimit(5);
+    setLimitStanice(5);
+    setLimitLinije(5);
   }
 
   function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -56,8 +61,6 @@ export default function Searchbar({
     l.broj.toLowerCase().includes(query.toLowerCase()) ||
     l.ime_linije.toLowerCase().includes(query.toLowerCase())
   );
-
-  const totalResults = filteredStanice.length + filteredLinije.length;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -127,46 +130,58 @@ export default function Searchbar({
           }}
         >
           <div className="p-3 fw-bold border-bottom">
-            {totalResults} rezultata
+            {filteredStanice.length + filteredLinije.length} rezultata
           </div>
 
           {filteredStanice.length > 0 && (
             <>
               <div className="px-3 py-2 bg-light fw-bold">Stanice</div>
-              {filteredStanice.slice(0, limit).map(stanica => (
+
+              {filteredStanice.slice(0, limitStanice).map(stanica => (
                 <StationItem
                   key={stanica.stanica_id}
                   stanica={stanica}
                   onClick={() => handleStationClick(stanica)}
                 />
               ))}
+
+              {limitStanice < filteredStanice.length && (
+                <div
+                  className="text-center py-2 fw-bold"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setLimitStanice(l => l + 5)}
+                >
+                  Učitaj još stanica
+                </div>
+              )}
             </>
           )}
 
           {filteredLinije.length > 0 && (
             <>
               <div className="px-3 py-2 bg-light fw-bold">Linije</div>
-              {filteredLinije.slice(0, limit).map(linija => (
+
+              {filteredLinije.slice(0, limitLinije).map(linija => (
                 <LineItem
                   key={linija.linija_id}
                   linija={linija}
                   onClick={() => setOpen(false)}
                 />
               ))}
+
+              {limitLinije < filteredLinije.length && (
+                <div
+                  className="text-center py-2 fw-bold"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setLimitLinije(l => l + 5)}
+                >
+                  Učitaj još linija
+                </div>
+              )}
             </>
           )}
 
-          {limit < totalResults && (
-            <div
-              className="text-center py-2 fw-bold"
-              style={{ cursor: "pointer" }}
-              onClick={() => setLimit(l => l + 5)}
-            >
-              Učitaj još
-            </div>
-          )}
-
-          {totalResults === 0 && (
+          {filteredStanice.length + filteredLinije.length === 0 && (
             <div className="p-3 text-muted">Nema rezultata</div>
           )}
         </div>

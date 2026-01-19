@@ -9,7 +9,7 @@ export default function LineItem({ linija, onClick }: { linija: Linija; onClick:
       <div className="d-flex align-items-center gap-2">
         <span className="fw-bold" style={{ 
           backgroundColor:
-      linija.tip === "autobus" ? "#0d6efd" : linija.tip === "tramvaj"? "#dc3545" : "#ffa200",
+      linija.tip === 1 ? "#0d6efd" : linija.tip === 2? "#dc3545" : "#ffa200",
           color: "white",
           padding: "2px 8px",
           borderRadius: 4,

@@ -310,7 +310,7 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
                     e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
                   }}
                 >
-                  ⚙️ Admin panel
+                  Admin panel
                 </button>
               )}
 
@@ -336,7 +336,7 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
                   e.currentTarget.style.color = '#dc3545';
                 }}
               >
-                🚪 Odjavi se
+                Odjavi se
               </button>
             </>
           )}

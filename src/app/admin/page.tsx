@@ -7,6 +7,8 @@ import Sidebar from '../../components/sidebar'
 import Bubble from '../../components/bubble'
 import StationItem from '../../components/station'
 import LineItem from '../../components/line'
+import MessageToast from '../../components/Message'
+
 import { Stanica, Linija, Korisnik } from '../../types/modeli'
 
 export default function AdminPage() {
@@ -14,6 +16,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [stanice, setStanice] = useState<Stanica[]>([])
   const [linije, setLinije] = useState<Linija[]>([])
+  const [editLinija, setEditLinija] = useState<Linija | null>(null)
+  const [editStations, setEditStations] = useState<Stanica[]>([])
   const [korisnici, setKorisnici] = useState<Korisnik[]>([])
   const [stanicaForm, setStanicaForm] = useState({
     naziv: '',
@@ -23,7 +27,7 @@ export default function AdminPage() {
   })
   const [linijaForm, setLinijaForm] = useState({
     broj: '',
-    tip: 'autobus',
+    tip: 1,
     ime_linije: '',
     aktivna: true
   })
@@ -40,6 +44,20 @@ export default function AdminPage() {
 
   const [linijaStations, setLinijaStations] = useState<Stanica[]>([])
   const [stationIdInput, setStationIdInput] = useState('')
+
+  const [updateLinijaSearch, setUpdateLinijaSearch] = useState('')
+  const [selectedUpdateLinija, setSelectedUpdateLinija] = useState<Linija | null>(null)
+  const [openUpdateLinijaSearch, setOpenUpdateLinijaSearch] = useState(false)
+  const [updateLinijaStations, setUpdateLinijaStations] = useState<Stanica[]>([])
+  const [updateStationIdInput, setUpdateStationIdInput] = useState('')
+  const [updateEditForm, setUpdateEditForm] = useState({
+    broj: '',
+    tip: 1,
+    ime_linije: '',
+    aktivna: true
+  })
+  const [isLoadingUpdate, setIsLoadingUpdate] = useState(false)
+  const updateLinijaSearchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const verifyAccess = async () => {
@@ -84,15 +102,6 @@ export default function AdminPage() {
     verifyAccess()
   }, [router])
 
-  const tipToCode = (tip: string) => {
-    return tip === 'tramvaj' ? 2 : tip === 'trolejbus' ? 3 : 1
-  }
-
-  const codeToTip = (code: number | string) => {
-    if (typeof code === 'number') return code === 2 ? 'tramvaj' : code === 3 ? 'trolejbus' : 'autobus'
-    return code
-  }
-
   useEffect(() => {
     if (!loading) {
       const token = localStorage.getItem('token')
@@ -106,18 +115,18 @@ export default function AdminPage() {
             const data = await res.json()
             setStanice(data)
           }
-        } catch {}
+        } catch { }
       }
 
       const fetchLinije = async () => {
         try {
-          const res = await fetch('/api/linije', { headers })
+          const res = await fetch('/api/lines', { headers })
           if (res.ok) {
             const data = await res.json()
-            const normalized = Array.isArray(data) ? data.map((l: any) => ({ ...l, tip: codeToTip(l.tip) })) : data
+            const normalized = Array.isArray(data) ? data.map((l: any) => ({ ...l, tip: l.tip })) : data
             setLinije(normalized)
           }
-        } catch {}
+        } catch { }
       }
 
       const fetchKorisnici = async () => {
@@ -127,7 +136,7 @@ export default function AdminPage() {
             const data = await res.json()
             setKorisnici(data)
           }
-        } catch {}
+        } catch { }
       }
 
       fetchStanice()
@@ -143,6 +152,9 @@ export default function AdminPage() {
       }
       if (linijaSearchRef.current && !linijaSearchRef.current.contains(event.target as Node)) {
         setOpenLinijaSearch(false)
+      }
+      if (updateLinijaSearchRef.current && !updateLinijaSearchRef.current.contains(event.target as Node)) {
+        setOpenUpdateLinijaSearch(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -292,13 +304,13 @@ export default function AdminPage() {
           return
         }
       }
-      const tipCode = tipToCode(linijaForm.tip)
+
       const res = await fetch('/api/lines', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           broj: linijaForm.broj,
-          tip: tipCode,
+          tip: linijaForm.tip,
           ime_linije: linijaForm.ime_linije,
           aktivna: linijaForm.aktivna,
           stanice: linijaStations.map(s => s.stanica_id)
@@ -307,13 +319,13 @@ export default function AdminPage() {
       const data = await res.json()
       if (res.ok) {
         setPoruka('Linija dodata')
-        setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })
+        setLinijaForm({ broj: '', tip: 1, ime_linije: '', aktivna: true })
         setLinijaStations([])
         setStationIdInput('')
         const refresh = await fetch('/api/lines', { headers })
         if (refresh.ok) {
           const refreshed = await refresh.json()
-          const normalized = Array.isArray(refreshed) ? refreshed.map((l: any) => ({ ...l, tip: codeToTip(l.tip) })) : refreshed
+          const normalized = Array.isArray(refreshed) ? refreshed.map((l: any) => ({ ...l, tip: l.tip })) : refreshed
           setLinije(normalized)
         }
       } else {
@@ -345,7 +357,7 @@ export default function AdminPage() {
         const refresh = await fetch('/api/lines', { headers: { Authorization: `Bearer ${token}` } })
         if (refresh.ok) {
           const refreshed = await refresh.json()
-          const normalized = Array.isArray(refreshed) ? refreshed.map((l: any) => ({ ...l, tip: codeToTip(l.tip) })) : refreshed
+          const normalized = Array.isArray(refreshed) ? refreshed.map((l: any) => ({ ...l, tip: l.tip })) : refreshed
           setLinije(normalized)
         }
       } else {
@@ -390,6 +402,201 @@ export default function AdminPage() {
     }
   }
 
+  const loadLinijaDataForUpdate = async (linija: Linija) => {
+    setIsLoadingUpdate(true)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+
+      setUpdateEditForm({
+        broj: linija.broj,
+        tip: linija.tip,
+        ime_linije: linija.ime_linije,
+        aktivna: linija.aktivna
+      })
+
+      const res = await fetch(`/api/lines?linija_id=${linija.linija_id}&stanice=true`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setUpdateLinijaStations(data)
+      } else {
+        setUpdateLinijaStations([])
+      }
+    } catch (error) {
+      setPoruka('Greška pri učitavanju podataka linije')
+      setUpdateLinijaStations([])
+    } finally {
+      setIsLoadingUpdate(false)
+    }
+  }
+
+  const handleSelectUpdateLinija = (linija: Linija) => {
+    setSelectedUpdateLinija(linija)
+    setOpenUpdateLinijaSearch(false)
+    loadLinijaDataForUpdate(linija)
+  }
+
+  const handleAddUpdateStationById = async (idStr: string) => {
+    const id = Number((idStr || '').toString().trim())
+    if (!id) {
+      setPoruka('Unesite validan ID stanice')
+      return
+    }
+    if (updateLinijaStations.some(s => s.stanica_id === id)) {
+      setPoruka('Stanica je već u listi')
+      setUpdateStationIdInput('')
+      return
+    }
+
+    const local = stanice.find(s => s.stanica_id === id)
+    if (local) {
+      setUpdateLinijaStations(prev => [...prev, local])
+      setUpdateStationIdInput('')
+      setPoruka(`Dodato: ${local.naziv || `ID ${id}`}`)
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const headers: Record<string, string> = {}
+      if (token) headers.Authorization = `Bearer ${token}`
+
+      const res = await fetch(`/api/stations?id=${id}`, { headers })
+      if (!res.ok) {
+        setPoruka('Stanica ne postoji')
+        return
+      }
+
+      const data = await res.json()
+      let stanicaObj: Stanica | undefined
+      if (Array.isArray(data)) stanicaObj = data.find((d: any) => d.stanica_id === id) ?? data[0]
+      else stanicaObj = data
+
+      if (!stanicaObj || stanicaObj.stanica_id !== id) {
+        setPoruka('Stanica ne postoji')
+        return
+      }
+
+      setUpdateLinijaStations(prev => [...prev, stanicaObj])
+      setUpdateStationIdInput('')
+      setPoruka(`Dodato: ${stanicaObj.naziv || `ID ${id}`}`)
+    } catch {
+      setPoruka('Greška pri proveri stanice')
+    }
+  }
+
+  const handleUpdateStationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddUpdateStationById(updateStationIdInput)
+    }
+  }
+
+  const removeUpdateStationFromList = (id: number) => {
+    setUpdateLinijaStations(prev => prev.filter(s => s.stanica_id !== id))
+  }
+
+  const moveUpdateStationUp = (index: number) => {
+    if (index === 0) return
+    const newStations = [...updateLinijaStations]
+    const temp = newStations[index]
+    newStations[index] = newStations[index - 1]
+    newStations[index - 1] = temp
+    setUpdateLinijaStations(newStations)
+  }
+
+  const moveUpdateStationDown = (index: number) => {
+    if (index === updateLinijaStations.length - 1) return
+    const newStations = [...updateLinijaStations]
+    const temp = newStations[index]
+    newStations[index] = newStations[index + 1]
+    newStations[index + 1] = temp
+    setUpdateLinijaStations(newStations)
+  }
+
+  const updateLinija = async () => {
+    if (!selectedUpdateLinija) {
+      setPoruka('Prvo odaberite liniju')
+      return
+    }
+
+    if (!updateEditForm.broj || !updateEditForm.ime_linije) {
+      setPoruka('Popunite validne podatke za liniju')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+
+      const tipCode = updateEditForm.tip
+
+      const res = await fetch(`/api/lines`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          linija_id: selectedUpdateLinija.linija_id,
+          broj: updateEditForm.broj,
+          tip: tipCode,
+          ime_linije: updateEditForm.ime_linije,
+          aktivna: updateEditForm.aktivna,
+          stanice: updateLinijaStations.map(s => s.stanica_id)
+        })
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setPoruka('Linija uspešno ažurirana')
+
+        const refreshRes = await fetch('/api/lines', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (refreshRes.ok) {
+          const refreshed = await refreshRes.json()
+          const normalized = Array.isArray(refreshed)
+            ? refreshed.map((l: any) => ({ ...l, tip: l.tip }))
+            : refreshed
+          setLinije(normalized)
+
+          const updatedLinija = normalized.find((l: Linija) => l.linija_id === selectedUpdateLinija.linija_id)
+          if (updatedLinija) {
+            setSelectedUpdateLinija(updatedLinija)
+          }
+        }
+      } else {
+        setPoruka(data.error || 'Greška pri ažuriranju linije')
+      }
+    } catch (error) {
+      setPoruka('Greška pri ažuriranju linije')
+    }
+  }
+
+  const resetUpdateForm = () => {
+    setSelectedUpdateLinija(null)
+    setUpdateLinijaSearch('')
+    setUpdateLinijaStations([])
+    setUpdateStationIdInput('')
+    setUpdateEditForm({
+      broj: '',
+      tip: 1,
+      ime_linije: '',
+      aktivna: true
+    })
+  }
+
   const filteredStanice = stanice.filter(s =>
     s.naziv.toLowerCase().includes(deleteStanicaSearch.toLowerCase())
   )
@@ -397,6 +604,11 @@ export default function AdminPage() {
   const filteredLinije = linije.filter(l =>
     l.broj.toLowerCase().includes(deleteLinijaSearch.toLowerCase()) ||
     l.ime_linije.toLowerCase().includes(deleteLinijaSearch.toLowerCase())
+  )
+
+  const filteredUpdateLinije = linije.filter(l =>
+    l.broj.toLowerCase().includes(updateLinijaSearch.toLowerCase()) ||
+    l.ime_linije.toLowerCase().includes(updateLinijaSearch.toLowerCase())
   )
 
   if (loading) {
@@ -425,6 +637,12 @@ export default function AdminPage() {
 
   return (
     <div className="d-flex" style={{ minHeight: '100vh', width: '100vw' }}>
+      <style>{`
+        .hover-bg:hover {
+          background-color: #f8f9fa;
+        }
+      `}</style>
+
       <div style={{ width: '7vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}>
         <Sidebar />
       </div>
@@ -456,12 +674,12 @@ export default function AdminPage() {
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
           height: '100%',
           overflowY: 'auto',
-          paddingTop: '2rem',
+          paddingTop: '0.5rem',
           paddingBottom: '3rem',
           zIndex: 1
         }}>
-          <div className="container py-3">
-            <div className="row justify-content-between align-items-center mb-3">
+          <div className="container py-2">
+            <div className="row justify-content-between align-items-center mb-2">
               <div className="col-auto">
                 <h1 className="h3 fw-bold text-dark">Admin panel</h1>
                 <p className="text-secondary mb-0" style={{ fontSize: '0.9rem' }}>Upravljanje stanicama, linijama i korisnicima</p>
@@ -471,9 +689,9 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="row g-3 mb-3" style={{ position: 'relative', zIndex: 50 }}>
-              <div className="col-md-6">
-                <Bubble padding="sm" opacity={0.9}>
+            <div className="row g-3 mb-2" style={{ position: 'relative', zIndex: 50 }}>
+              <div className="col-md-6 d-flex">
+                <Bubble padding="sm" opacity={0.9} className="w-100 h-100">
                   <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Dodaj stanicu</h5>
                   <div className="mb-2">
                     <input
@@ -523,8 +741,8 @@ export default function AdminPage() {
                 </Bubble>
               </div>
 
-              <div className="col-md-6">
-                <Bubble padding="sm" opacity={0.9}>
+              <div className="col-md-6 d-flex">
+                <Bubble padding="sm" opacity={0.9} className="w-100">
                   <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Dodaj liniju</h5>
                   <div className="mb-2">
                     <input
@@ -545,7 +763,7 @@ export default function AdminPage() {
                   <div className="mb-2">
                     <select
                       value={linijaForm.tip}
-                      onChange={e => setLinijaForm({ ...linijaForm, tip: e.target.value })}
+                      onChange={e => setLinijaForm({ ...linijaForm, tip: Number(e.target.value) })}
                       className="form-select form-select-sm"
                     >
                       <option value="autobus">Autobus</option>
@@ -600,7 +818,7 @@ export default function AdminPage() {
                     <button onClick={addLinija} className="btn btn-primary btn-sm">Dodaj</button>
                     <button
                       onClick={() => {
-                        setLinijaForm({ broj: '', tip: 'autobus', ime_linije: '', aktivna: true })
+                        setLinijaForm({ broj: '', tip: 1, ime_linije: '', aktivna: true })
                         setLinijaStations([])
                         setStationIdInput('')
                       }}
@@ -768,7 +986,213 @@ export default function AdminPage() {
             </div>
 
             <div className="row g-3 mb-3">
-              <div className="col-lg-6">
+              <div className="col-12" style={{ position: 'relative', zIndex: 50 }}>
+                <Bubble padding="sm" opacity={0.9}>
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Ažuriraj liniju</h5>
+
+                  <div ref={updateLinijaSearchRef} style={{ position: 'relative', zIndex: 9999 }}>
+                    <div className="input-group input-group-sm mb-2">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Pretraži linije..."
+                        value={updateLinijaSearch}
+                        onChange={e => setUpdateLinijaSearch(e.target.value)}
+                      />
+                      <button
+                        className="btn btn-outline-secondary"
+                        type="button"
+                        onClick={() => setOpenUpdateLinijaSearch(true)}
+                      >
+                        🔍
+                      </button>
+                    </div>
+                    {openUpdateLinijaSearch && updateLinijaSearch && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '40px',
+                        left: 0,
+                        width: '100%',
+                        maxHeight: 250,
+                        background: 'white',
+                        borderRadius: 8,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+                        overflowY: 'auto',
+                        zIndex: 9999
+                      }}>
+                        <div className="p-2 fw-bold border-bottom" style={{ fontSize: '0.85rem' }}>
+                          {filteredUpdateLinije.length} rezultata
+                        </div>
+                        {filteredUpdateLinije.length > 0 ? (
+                          filteredUpdateLinije.map(linija => (
+                            <div key={linija.linija_id}>
+                              <LineItem
+                                linija={linija}
+                                onClick={() => handleSelectUpdateLinija(linija)}
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-2 text-muted" style={{ fontSize: '0.85rem' }}>Nema rezultata</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedUpdateLinija && (
+                    <div className="alert alert-info p-2 mb-2" style={{ fontSize: '0.85rem' }}>
+                      Uređujete: <strong>{selectedUpdateLinija.broj} - {selectedUpdateLinija.ime_linije}</strong>
+                    </div>
+                  )}
+
+                  {selectedUpdateLinija && (
+                    <>
+                      {isLoadingUpdate ? (
+                        <div className="text-center py-4">
+                          <div className="spinner-border spinner-border-sm text-primary" role="status">
+                            <span className="visually-hidden">Učitavanje...</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <div className="mb-2">
+                              <label className="form-label" style={{ fontSize: '0.85rem' }}>Broj linije</label>
+                              <input
+                                value={updateEditForm.broj}
+                                onChange={e => setUpdateEditForm({ ...updateEditForm, broj: e.target.value })}
+                                className="form-control form-control-sm"
+                                placeholder="Broj linije"
+                              />
+                            </div>
+
+                            <div className="mb-2">
+                              <label className="form-label" style={{ fontSize: '0.85rem' }}>Ime linije</label>
+                              <input
+                                value={updateEditForm.ime_linije}
+                                onChange={e => setUpdateEditForm({ ...updateEditForm, ime_linije: e.target.value })}
+                                className="form-control form-control-sm"
+                                placeholder="Ime linije"
+                              />
+                            </div>
+
+                            <div className="mb-3">
+                              <label className="form-label" style={{ fontSize: '0.85rem' }}>Tip</label>
+                              <select
+                                value={updateEditForm.tip}
+                                onChange={e => setUpdateEditForm({ ...updateEditForm, tip: Number(e.target.value) })}
+                                className="form-select form-select-sm"
+                              >
+                                <option value={1}>Autobus</option>
+                                <option value={2}>Tramvaj</option>
+                                <option value={3}>Trolejbus</option>
+                              </select>
+                            </div>
+
+                            <div className="form-check form-switch mb-3">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id="aktivnaLinijaUpdate"
+                                checked={updateEditForm.aktivna}
+                                onChange={e => setUpdateEditForm({ ...updateEditForm, aktivna: e.target.checked })}
+                              />
+                              <label className="form-check-label" htmlFor="aktivnaLinijaUpdate" style={{ fontSize: '0.9rem' }}>
+                                Aktivna
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="col-md-6">
+                            <div className="mb-3">
+                              <label className="form-label" style={{ fontSize: '0.85rem' }}>Stanice na liniji</label>
+
+                              <div className="input-group input-group-sm mb-2">
+                                <input
+                                  value={updateStationIdInput}
+                                  onChange={e => setUpdateStationIdInput(e.target.value)}
+                                  onKeyDown={handleUpdateStationKeyDown}
+                                  className="form-control"
+                                  placeholder="Unesite ID stanice"
+                                />
+                                <button
+                                  className="btn btn-outline-secondary"
+                                  type="button"
+                                  onClick={() => handleAddUpdateStationById(updateStationIdInput)}
+                                >
+                                  Dodaj
+                                </button>
+                              </div>
+
+                              <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid #dee2e6', borderRadius: 4 }}>
+                                {updateLinijaStations.length === 0 ? (
+                                  <div className="text-muted text-center p-3" style={{ fontSize: '0.85rem' }}>
+                                    Nema stanica na liniji
+                                  </div>
+                                ) : (
+                                  <ul className="list-group list-group-flush">
+                                    {updateLinijaStations.map((s, index) => (
+                                      <li key={s.stanica_id} className="list-group-item d-flex justify-content-between align-items-center p-2">
+                                        <div className="d-flex align-items-center gap-2">
+                                          <span className="badge bg-secondary" style={{ fontSize: '0.7rem' }}>
+                                            {index + 1}
+                                          </span>
+                                          <div style={{ fontSize: '0.85rem' }}>
+                                            {s.naziv || `ID ${s.stanica_id}`}
+                                          </div>
+                                        </div>
+                                        <div className="d-flex gap-1">
+                                          <button
+                                            className="btn btn-sm btn-outline-secondary p-1"
+                                            style={{ fontSize: '0.7rem', lineHeight: 1 }}
+                                            onClick={() => moveUpdateStationUp(index)}
+                                            disabled={index === 0}
+                                          >
+                                            ↑
+                                          </button>
+                                          <button
+                                            className="btn btn-sm btn-outline-secondary p-1"
+                                            style={{ fontSize: '0.7rem', lineHeight: 1 }}
+                                            onClick={() => moveUpdateStationDown(index)}
+                                            disabled={index === updateLinijaStations.length - 1}
+                                          >
+                                            ↓
+                                          </button>
+                                          <button
+                                            className="btn btn-sm btn-outline-danger p-1"
+                                            style={{ fontSize: '0.7rem', lineHeight: 1 }}
+                                            onClick={() => removeUpdateStationFromList(s.stanica_id)}
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="col-12">
+                            <div className="d-flex gap-2">
+                              <button onClick={updateLinija} className="btn btn-primary btn-sm">
+                                Sačuvaj izmene
+                              </button>
+                              <button onClick={resetUpdateForm} className="btn btn-outline-secondary btn-sm">
+                                Otkaži
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </Bubble>
+              </div>
+            </div>
+            <div className="row g-3 mb-2" style={{ position: 'relative', zIndex: 49 }}>
+              <div className="col-md-6" style={{ position: 'relative', zIndex: 49 }}>
                 <Bubble padding="sm" opacity={0.9}>
                   <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Korisnici</h5>
                   <div className="list-group mb-3" style={{ maxHeight: 200, overflowY: 'auto' }}>
@@ -799,7 +1223,7 @@ export default function AdminPage() {
                                   const refresh = await fetch('/api/korisnici', { headers: { Authorization: `Bearer ${token}` } })
                                   if (refresh.ok) setKorisnici(await refresh.json())
                                 }
-                              } catch {}
+                              } catch { }
                             }}
                             className="btn btn-sm btn-outline-warning"
                             style={{ fontSize: '0.75rem' }}
@@ -810,6 +1234,7 @@ export default function AdminPage() {
                       </div>
                     ))}
                   </div>
+
                   <div className="row g-2">
                     <div className="col">
                       <input
@@ -820,88 +1245,19 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="col-auto">
-                      <button onClick={promoteToAdmin} className="btn btn-primary btn-sm">Promoviši</button>
+                      <button onClick={promoteToAdmin} className="btn btn-primary btn-sm me-2">Promoviši</button>
+                      <button onClick={promoteToAdmin} className="btn btn-primary btn-sm ">Ukloni</button>
                     </div>
-                  </div>
-                </Bubble>
-              </div>
 
-              <div className="col-lg-6">
-                <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Brze akcije</h5>
-                  <div className="d-flex flex-column gap-2">
-                    <button
-                      onClick={async () => {
-                        try {
-                          const token = localStorage.getItem('token')
-                          if (!token) return
-                          const res = await fetch('/api/stations/delete-all', {
-                            method: 'DELETE',
-                            headers: { Authorization: `Bearer ${token}` }
-                          })
-                          if (res.ok) {
-                            setPoruka('Sve stanice obrisane')
-                            const refresh = await fetch('/api/stations', { headers: { Authorization: `Bearer ${token}` } })
-                            if (refresh.ok) setStanice(await refresh.json())
-                          }
-                        } catch {}
-                      }}
-                      className="btn btn-outline-danger btn-sm"
-                    >
-                      Obriši sve stanice
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const token = localStorage.getItem('token')
-                          if (!token) return
-                          const res = await fetch('/api/lines/delete-all', {
-                            method: 'DELETE',
-                            headers: { Authorization: `Bearer ${token}` }
-                          })
-                          if (res.ok) {
-                            setPoruka('Sve linije obrisane')
-                            const refresh = await fetch('/api/lines', { headers: { Authorization: `Bearer ${token}` } })
-                            if (refresh.ok) setLinije(await refresh.json())
-                          }
-                        } catch {}
-                      }}
-                      className="btn btn-outline-danger btn-sm"
-                    >
-                      Obriši sve linije
-                    </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const token = localStorage.getItem('token')
-                          if (!token) return
-                          const res = await fetch('/api/korisnici/reset-roles', {
-                            method: 'PUT',
-                            headers: { Authorization: `Bearer ${token}` }
-                          })
-                          if (res.ok) {
-                            setPoruka('Resetovane uloge korisnika')
-                            const refresh = await fetch('/api/korisnici', { headers: { Authorization: `Bearer ${token}` } })
-                            if (refresh.ok) setKorisnici(await refresh.json())
-                          }
-                        } catch {}
-                      }}
-                      className="btn btn-outline-secondary btn-sm"
-                    >
-                      Resetuj sve uloge na korisnik
-                    </button>
                   </div>
                 </Bubble>
               </div>
             </div>
 
-            {poruka && (
-              <div className="row mt-3">
-                <div className="col-12">
-                  <div className="alert alert-info text-center" style={{ fontSize: '0.9rem' }}>{poruka}</div>
-                </div>
-              </div>
-            )}
+            <MessageToast
+              poruka={poruka}
+              onClose={() => setPoruka('')}
+            />
           </div>
         </div>
       </div>

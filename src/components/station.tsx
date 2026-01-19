@@ -10,7 +10,7 @@ export default function StationItem({ stanica, onClick }: { stanica: Stanica; on
     >
       <div className="d-flex align-items-center justify-content-between">
         <div>
-          <div className="fw" style={{ fontSize: "0.9rem" }}>{stanica.naziv}</div>
+          <div className="fw" style={{ fontSize: "0.9rem" }}>{stanica.naziv} ({stanica.stanica_id})</div>
         </div>
         {!stanica.aktivna && (
           <span className="badge bg-secondary">Neaktivna</span>
