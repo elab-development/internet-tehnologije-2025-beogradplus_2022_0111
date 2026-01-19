@@ -7,18 +7,14 @@ import Sidebar from '../../components/sidebar'
 import Bubble from '../../components/bubble'
 import StationItem from '../../components/station'
 import LineItem from '../../components/line'
-import MessageToast from '../../components/Message'
 
-import { Stanica, Linija, Korisnik } from '../../types/modeli'
+import { Stanica, Linija } from '../../types/modeli'
 
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [stanice, setStanice] = useState<Stanica[]>([])
   const [linije, setLinije] = useState<Linija[]>([])
-  const [editLinija, setEditLinija] = useState<Linija | null>(null)
-  const [editStations, setEditStations] = useState<Stanica[]>([])
-  const [korisnici, setKorisnici] = useState<Korisnik[]>([])
   const [stanicaForm, setStanicaForm] = useState({
     naziv: '',
     lat: '',
@@ -58,6 +54,39 @@ export default function AdminPage() {
   })
   const [isLoadingUpdate, setIsLoadingUpdate] = useState(false)
   const updateLinijaSearchRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!poruka) return
+    const el = document.createElement('div')
+    el.textContent = poruka
+
+    el.style.position = 'fixed'
+    el.style.top = '24px'
+    el.style.left = '50%'
+    el.style.transform = 'translateX(-50%)'
+    el.style.zIndex = '9999'
+
+    el.style.background = '#3a3a3a'
+    el.style.color = '#f0f0f0'
+    el.style.padding = '12px 18px'
+    el.style.borderRadius = '0px'
+    el.style.fontSize = '14px'
+    el.style.fontWeight = '500'
+
+    el.style.boxShadow = '0 12px 28px rgba(0,0,0,0.35)'
+
+    document.body.appendChild(el)
+
+    const t = setTimeout(() => {
+      el.remove()
+      setPoruka('')
+    }, 2000)
+
+    return () => {
+      clearTimeout(t)
+      el.remove()
+    }
+  }, [poruka])
 
   useEffect(() => {
     const verifyAccess = async () => {
@@ -129,19 +158,8 @@ export default function AdminPage() {
         } catch { }
       }
 
-      const fetchKorisnici = async () => {
-        try {
-          const res = await fetch('/api/korisnici', { headers })
-          if (res.ok) {
-            const data = await res.json()
-            setKorisnici(data)
-          }
-        } catch { }
-      }
-
       fetchStanice()
       fetchLinije()
-      fetchKorisnici()
     }
   }, [loading])
 
@@ -392,13 +410,43 @@ export default function AdminPage() {
       if (res.ok) {
         setPoruka('Korisnik postavljen za admina')
         setPromoteEmail('')
-        const refresh = await fetch('/api/korisnici', { headers: { Authorization: `Bearer ${token}` } })
-        if (refresh.ok) setKorisnici(await refresh.json())
       } else {
         setPoruka(data.error || 'Greška pri promovanju korisnika')
       }
     } catch {
       setPoruka('Greška pri promovanju korisnika')
+    }
+  }
+
+  const demoteFromAdmin = async () => {
+    const email = promoteEmail.trim().toLowerCase()
+    if (!email) {
+      setPoruka('Unesite email korisnika')
+      return
+    }
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+      const res = await fetch('/api/korisnici/promote', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, uloga_id: 1 })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setPoruka('Admin prava uklonjena')
+        setPromoteEmail('')
+      } else {
+        setPoruka(data.error || 'Greška pri uklanjanju admin prava')
+      }
+    } catch {
+      setPoruka('Greška pri uklanjanju admin prava')
     }
   }
 
@@ -1191,52 +1239,13 @@ export default function AdminPage() {
                 </Bubble>
               </div>
             </div>
+
             <div className="row g-3 mb-2" style={{ position: 'relative', zIndex: 49 }}>
               <div className="col-md-6" style={{ position: 'relative', zIndex: 49 }}>
                 <Bubble padding="sm" opacity={0.9}>
-                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Korisnici</h5>
-                  <div className="list-group mb-3" style={{ maxHeight: 200, overflowY: 'auto' }}>
-                    {korisnici.map(k => (
-                      <div key={k.korisnik_id} className="list-group-item d-flex justify-content-between align-items-center p-2">
-                        <div>
-                          <div className="fw-semibold" style={{ fontSize: '0.85rem' }}>{k.ime} • {k.email}</div>
-                          <div className="text-secondary" style={{ fontSize: '0.75rem' }}>
-                            Uloga: {k.uloga_id === 1 ? 'Admin' : k.uloga_id === 2 ? 'Korisnik' : 'Gost'}
-                          </div>
-                        </div>
-                        {k.uloga_id !== 1 && (
-                          <button
-                            onClick={async () => {
-                              try {
-                                const token = localStorage.getItem('token')
-                                if (!token) return
-                                const res = await fetch('/api/korisnici/promote', {
-                                  method: 'PUT',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    Authorization: `Bearer ${token}`
-                                  },
-                                  body: JSON.stringify({ korisnik_id: k.korisnik_id, uloga_id: 2 })
-                                })
-                                if (res.ok) {
-                                  setPoruka('Korisnik postavljen za admina')
-                                  const refresh = await fetch('/api/korisnici', { headers: { Authorization: `Bearer ${token}` } })
-                                  if (refresh.ok) setKorisnici(await refresh.json())
-                                }
-                              } catch { }
-                            }}
-                            className="btn btn-sm btn-outline-warning"
-                            style={{ fontSize: '0.75rem' }}
-                          >
-                            Admin
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Upravljanje ulogama</h5>
                   <div className="row g-2">
-                    <div className="col">
+                    <div className="col-12">
                       <input
                         value={promoteEmail}
                         onChange={e => setPromoteEmail(e.target.value)}
@@ -1244,20 +1253,20 @@ export default function AdminPage() {
                         placeholder="Email korisnika"
                       />
                     </div>
-                    <div className="col-auto">
-                      <button onClick={promoteToAdmin} className="btn btn-primary btn-sm me-2">Promoviši</button>
-                      <button onClick={promoteToAdmin} className="btn btn-primary btn-sm ">Ukloni</button>
+                    <div className="col-12">
+                      <div className="d-flex gap-2 w-100">
+                        <button onClick={promoteToAdmin} className="btn btn-danger btn-sm flex-fill">
+                          Postavi za admina
+                        </button>
+                        <button onClick={demoteFromAdmin} className="btn btn-danger btn-sm flex-fill">
+                          Ukloni admina
+                        </button>
+                      </div>
                     </div>
-
                   </div>
                 </Bubble>
               </div>
             </div>
-
-            <MessageToast
-              poruka={poruka}
-              onClose={() => setPoruka('')}
-            />
           </div>
         </div>
       </div>

@@ -27,9 +27,11 @@ export default function Home() {
     };
     fetchStanice();
   }, []);
+
   useEffect(() => {
-    const auth = sessionStorage.getItem("auth");
-    if (!auth) {
+    const token = localStorage.getItem("token");
+    const auth = localStorage.getItem("auth");
+    if (!token && auth !== "true" && auth !== "guest") {
       router.push("/login");
     }
   }, [router]);

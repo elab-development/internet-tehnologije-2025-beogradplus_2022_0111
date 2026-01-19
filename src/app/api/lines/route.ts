@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
         const parametri = Object.fromEntries(request.nextUrl.searchParams);
         const _naziv = parametri["ime_linije"];
         const _broj = parametri["broj"];
-        const _linija_id = parametri["linija_id"];  // NOVO
-        const _stanice = parametri["stanice"];      // NOVO
+        const _linija_id = parametri["linija_id"];
+        const _stanice = parametri["stanice"];
 
-        // Ako traži stanice za liniju
+
         if (_linija_id && _stanice === 'true') {
             const { data, error } = await supabase
                 .from('linija_stanica')
@@ -37,8 +37,6 @@ export async function GET(request: NextRequest) {
             const stanice = data.map(item => item.stanica).filter(Boolean);
             return NextResponse.json(stanice);
         }
-
-        // Postojeća logika za pretragu linija
         let query = supabase.from('linija').select('*');
         if (_naziv)
             query = query.like('ime_linije', `%${_naziv}%`);
@@ -98,4 +96,23 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
     return NextResponse.json({ success: true }, { status: 200 });
+}
+export async function DELETE(request: NextRequest) {
+    try {
+        const parametri = Object.fromEntries(request.nextUrl.searchParams);
+        const linija_id = parametri["id"];
+
+        const { data: stanica, error } = await supabase.from('linija').delete().eq('linija_id', linija_id).select();
+
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        
+        return NextResponse.json({ status: 201 });
+
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+
+    }
 }

@@ -19,14 +19,19 @@ export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('token');
+    const token = localStorage.getItem('token');
     if (token) {
       router.push('/');
     }
   }, [router]);
 
   async function handleGuest() {
-    sessionStorage.setItem("auth", "true");
+    const token = localStorage.getItem('token');
+    if (token) {
+      router.push('/');
+      return;
+    }
+    localStorage.setItem("auth", "guest");
     router.push("/");
   }
 
@@ -62,7 +67,7 @@ export default function LoginPage() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.korisnik));
-      sessionStorage.setItem("auth", "true");
+      localStorage.setItem("auth", "true");
 
       router.push("/");
     } catch (err) {
@@ -95,7 +100,7 @@ export default function LoginPage() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.korisnik));
-      sessionStorage.setItem("auth", "true");
+      localStorage.setItem("auth", "true");
 
       router.push("/");
     } catch (err) {

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         const parametri = Object.fromEntries(request.nextUrl.searchParams);
         const _naziv = parametri["naziv"];
 
-        let query = supabase.from('stanica').select('*').range(0,9999);
+        let query = supabase.from('stanica').select('*').range(0, 9999);
         if (_naziv)
             query = query.like('naziv', `%${_naziv}%`);
         const { data, error } = await query;
@@ -49,12 +49,12 @@ export async function PUT(request: NextRequest) {
     try {
         const body = await request.json();
         const { stanica_id, ...updateData } = body;
-        if(!stanica_id){
-            return NextResponse.json({error : "Stanica id je obavezan",status: 400});
+        if (!stanica_id) {
+            return NextResponse.json({ error: "Stanica id je obavezan", status: 400 });
         }
         const { data, error } = await supabase.from('stanica').update(updateData).eq('stanica_id', stanica_id).select();
-        if(error)
-            return NextResponse.json({error : error,status: 501});
+        if (error)
+            return NextResponse.json({ error: error, status: 501 });
 
         return NextResponse.json(data, { status: 201 });
 
@@ -63,3 +63,21 @@ export async function PUT(request: NextRequest) {
 
     }
 }
+export async function DELETE(request: NextRequest) {
+    try {
+        const parametri = Object.fromEntries(request.nextUrl.searchParams);
+        const stanica_id = parametri["id"];
+        
+        const { data: stanica, error } = await supabase.from('stanica').delete().eq('stanica_id', stanica_id).select();
+        
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+        
+        return NextResponse.json({ status: 201 });  
+        
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
