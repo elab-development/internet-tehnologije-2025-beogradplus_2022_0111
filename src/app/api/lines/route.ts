@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
         const _stanice = parametri["stanice"];
         const _stanica_id = parametri["stanica_id"];
 
-        // Ako je traÅ¾ena stanica_id, vrati linije za tu stanicu
         if (_stanica_id) {
             const { data, error } = await supabase
                 .from('linija_stanica')
@@ -44,6 +43,7 @@ export async function GET(request: NextRequest) {
                 .from('linija_stanica')
                 .select(`
                     stanica_id,
+                    redni_broj,
                     stanica:stanica_id (
                         stanica_id,
                         naziv,
@@ -52,7 +52,8 @@ export async function GET(request: NextRequest) {
                         aktivna
                     )
                 `)
-                .eq('linija_id', _linija_id);
+                .eq('linija_id', _linija_id)
+                .order('redni_broj', { ascending: true });
 
             if (error) {
                 return NextResponse.json({ error: error.message }, { status: 500 });
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
         for (let i = 0; i < stanice.length; i++) {
-            linijaStanice.push({ linija_id: linija.linija_id, stanica_id: stanice[i] });
+            linijaStanice.push({ linija_id: linija.linija_id, stanica_id: stanice[i], redni_broj: i + 1 });
         }
         const { error: err } = await supabase.from('linija_stanica').insert(linijaStanice).select();
         if (err) {
@@ -110,7 +111,7 @@ export async function PUT(request: NextRequest) {
             await supabase.from('linija_stanica').delete().eq('linija_id', linija_id);
             let linijaStanice = [];
             for (let i = 0; i < stanice.length; i++) {
-                linijaStanice.push({ linija_id: linija_id, stanica_id: stanice[i] });
+                linijaStanice.push({ linija_id: linija_id, stanica_id: stanice[i], redni_broj: i + 1 });
             }
             const { data, error } = await supabase.from('linija_stanica').insert(linijaStanice);
             if (error)

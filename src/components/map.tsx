@@ -1,22 +1,23 @@
 'use client';
-import { MapContainer, TileLayer, ZoomControl, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, ZoomControl, Marker, useMapEvents, useMap, Polyline } from 'react-leaflet';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { fetchRouteOSRM } from '../util/routeService';
 
 function createStationIcon(zoomLevel: number, aktivna: boolean = true) {
   const baseSize = 18;
   const size = Math.max(baseSize, baseSize + (zoomLevel - 13) * 3);
 
   const bg = aktivna
-    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' // blue gradient
-    : 'linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%)'; // gray gradient
+    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    : 'linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%)';
 
   const shadow = aktivna
     ? '0 2px 8px rgba(59, 130, 246, 0.5), 0 0 0 3px white'
     : '0 2px 6px rgba(60, 64, 67, 0.18), 0 0 0 3px white';
 
-  const svgFill = aktivna ? 'white' : '#374151'; // white on blue, dark gray on light gray
+  const svgFill = aktivna ? 'white' : '#374151';
 
   return L.divIcon({
     html: `
@@ -81,18 +82,22 @@ export default function Map({
   zoom = 14,
   center = [44.7866, 20.4489],
   stanice = [],
-  onMarkerClick
+  onMarkerClick,
+  linija_id
 }: {
   visina?: string,
   sirina?: string,
   zoom?: number,
   center?: [number, number],
   stanice?: any[],
-  onMarkerClick?: (stanica: any) => void
+  onMarkerClick?: (stanica: any) => void,
+  linija_id?: number
 }) {
   const [currentCenter, setCurrentCenter] = useState<[number, number]>(center);
   const [currentZoom, setCurrentZoom] = useState<number>(zoom);
   const [nearbyStations, setNearbyStations] = useState<any[]>([]);
+  const [routeCoords, setRouteCoords] = useState<Array<[number, number]>>([]);
+  const [linijaStanice, setLinijaStanice] = useState<any[]>([]);
 
   useEffect(() => {
     setCurrentCenter(center);
@@ -101,6 +106,36 @@ export default function Map({
   useEffect(() => {
     setCurrentZoom(zoom);
   }, [zoom]);
+
+  useEffect(() => {
+    if (linija_id) {
+      fetchLineRoute(linija_id);
+    } else {
+      setRouteCoords([]);
+      setLinijaStanice([]);
+    }
+  }, [linija_id]);
+
+  async function fetchLineRoute(id: number) {
+    try {
+      const res = await fetch(`/api/lines?linija_id=${id}&stanice=true`);
+      const stations = await res.json();
+      
+      setLinijaStanice(stations);
+
+      if (stations.length < 2) {
+        setRouteCoords([]);
+        return;
+      }
+
+      const route = await fetchRouteOSRM(stations);
+      const coords = route.map(c => [c.lat, c.lng] as [number, number]);
+      setRouteCoords(coords);
+    } catch (error) {
+      console.error('Error fetching line route:', error);
+      setRouteCoords([]);
+    }
+  }
 
   useEffect(() => {
     if (stanice.length === 0) return;
@@ -138,7 +173,16 @@ export default function Map({
         <MapUpdater center={center} zoom={zoom} />
         <MapCenterTracker onCenterChange={setCurrentCenter} onZoomChange={setCurrentZoom} />
 
-        {nearbyStations.map((stanica) => (
+        {routeCoords.length > 0 && (
+          <Polyline
+            positions={routeCoords}
+            color="#2563eb"
+            weight={4}
+            opacity={0.7}
+          />
+        )}
+
+        {(linija_id ? linijaStanice : nearbyStations).map((stanica) => (
           <Marker
             key={stanica.stanica_id}
             position={[stanica.lat, stanica.lng]}

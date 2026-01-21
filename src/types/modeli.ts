@@ -6,6 +6,7 @@ export interface Korisnik {
   datum_kreiranja: Date; 
   uloga_id: number;      
 }
+
 export interface Uloga {
   uloga_id: number;
   naziv: string;
@@ -31,14 +32,17 @@ export interface Linija {
 export interface LinijaStanica {
   linija_id: number;
   stanica_id: number;
+  redni_broj: number;
 }
 
 export interface OmiljenaStanica {
   korisnik_id: number;
   stanica_id: number;
+  os_id: number;
 }
 
 export interface OmiljenaLinija {
   korisnik_id: number;
   linija_id: number;
+  ol_id: number;
 }

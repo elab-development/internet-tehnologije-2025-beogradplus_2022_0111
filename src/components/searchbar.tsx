@@ -7,11 +7,13 @@ import { Stanica, Linija } from '../types/modeli';
 export default function Searchbar({
   onStationSelect,
   selectedStation,
-  onClearSelectedStation
+  onClearSelectedStation,
+  onLineSelect
 }: {
   onStationSelect?: (stanica: Stanica) => void,
   selectedStation?: Stanica | null,
-  onClearSelectedStation?: () => void
+  onClearSelectedStation?: () => void,
+  onLineSelect?: (linija_id: number) => void
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -103,6 +105,15 @@ export default function Searchbar({
     onStationSelect && onStationSelect(stanica);
   }
 
+  function handleLineClick(linija: Linija) {
+    setOpen(false);
+    onLineSelect && onLineSelect(linija.linija_id);
+  }
+
+  function handleLineClickFromStation(linija: Linija) {
+    onLineSelect && onLineSelect(linija.linija_id);
+  }
+
   return (
     <div
       ref={searchRef}
@@ -190,7 +201,7 @@ export default function Searchbar({
                 <LineItem
                   key={linija.linija_id}
                   linija={linija}
-                  onClick={() => setOpen(false)}
+                  onClick={() => handleLineClick(linija)}
                 />
               ))}
 
@@ -259,9 +270,11 @@ export default function Searchbar({
                       color: "white",
                       padding: "4px 10px",
                       borderRadius: 4,
-                      fontSize: "0.85rem"
+                      fontSize: "0.85rem",
+                      cursor: "pointer"
                     }}
                     title={linija.ime_linije}
+                    onClick={() => handleLineClickFromStation(linija)}
                   >
                     {linija.broj}
                   </span>

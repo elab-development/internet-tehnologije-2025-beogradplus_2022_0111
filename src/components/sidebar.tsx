@@ -15,7 +15,9 @@ export default function Sidebar() {
             padding: "1.5rem 1rem",
             height: "100vh",
             gap: "1rem",
-            width: "100%",
+            width: "115px",
+            minWidth: "115px",
+            flexShrink: 0,
             overflowY: "auto"
         }}>
             <nav style={{
@@ -43,7 +45,6 @@ export default function Sidebar() {
                 >
                     Početna
                 </div>
-
                 <div
                     onClick={() => window.location.href = '/aboutus'}
                     style={{
@@ -89,7 +90,6 @@ export default function Sidebar() {
                 >
                     Korisnik
                 </div>
-
                 <PopupKorisnik
                     isOpen={isPopupOpen}
                     onClose={() => setIsPopupOpen(false)}
