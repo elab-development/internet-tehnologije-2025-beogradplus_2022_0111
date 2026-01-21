@@ -13,7 +13,31 @@ export async function GET(request: NextRequest) {
         const _broj = parametri["broj"];
         const _linija_id = parametri["linija_id"];
         const _stanice = parametri["stanice"];
+        const _stanica_id = parametri["stanica_id"];
 
+        // Ako je traÅ¾ena stanica_id, vrati linije za tu stanicu
+        if (_stanica_id) {
+            const { data, error } = await supabase
+                .from('linija_stanica')
+                .select(`
+                    linija_id,
+                    linija:linija_id (
+                        linija_id,
+                        broj,
+                        tip,
+                        ime_linije,
+                        aktivna
+                    )
+                `)
+                .eq('stanica_id', _stanica_id);
+
+            if (error) {
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
+
+            const linije = data.map(item => item.linija).filter(Boolean);
+            return NextResponse.json(linije);
+        }
 
         if (_linija_id && _stanice === 'true') {
             const { data, error } = await supabase
@@ -37,6 +61,7 @@ export async function GET(request: NextRequest) {
             const stanice = data.map(item => item.stanica).filter(Boolean);
             return NextResponse.json(stanice);
         }
+        
         let query = supabase.from('linija').select('*');
         if (_naziv)
             query = query.like('ime_linije', `%${_naziv}%`);
@@ -97,6 +122,7 @@ export async function PUT(request: NextRequest) {
     }
     return NextResponse.json({ success: true }, { status: 200 });
 }
+
 export async function DELETE(request: NextRequest) {
     try {
         const parametri = Object.fromEntries(request.nextUrl.searchParams);

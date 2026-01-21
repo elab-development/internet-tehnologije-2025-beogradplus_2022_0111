@@ -21,6 +21,8 @@ export default function Searchbar({
 
   const [stanice, setStanice] = useState<Stanica[]>([]);
   const [linije, setLinije] = useState<Linija[]>([]);
+  const [linijeZaStanicu, setLinijeZaStanicu] = useState<Linija[]>([]);
+  const [loadingLinije, setLoadingLinije] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +42,29 @@ export default function Searchbar({
     fetchStanice();
     fetchLinije();
   }, []);
+
+  useEffect(() => {
+    const fetchLinijeZaStanicu = async () => {
+      if (!selectedStation) {
+        setLinijeZaStanicu([]);
+        return;
+      }
+
+      setLoadingLinije(true);
+      try {
+        const res = await fetch(`/api/lines?stanica_id=${selectedStation.stanica_id}`);
+        const data = await res.json();
+        setLinijeZaStanicu(data);
+      } catch (error) {
+        console.error('Greška pri učitavanju linija:', error);
+        setLinijeZaStanicu([]);
+      } finally {
+        setLoadingLinije(false);
+      }
+    };
+
+    fetchLinijeZaStanicu();
+  }, [selectedStation]);
 
   function handleSearch() {
     setOpen(true);
@@ -197,7 +222,9 @@ export default function Searchbar({
             background: "white",
             borderRadius: 12,
             boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-            padding: "1rem"
+            padding: "1rem",
+            maxHeight: 400,
+            overflowY: "auto"
           }}
         >
           <div className="d-flex justify-content-between mb-3">
@@ -208,12 +235,41 @@ export default function Searchbar({
             />
           </div>
 
-          <div><strong>ID:</strong> {selectedStation.stanica_id}</div>
-          <div><strong>Lat:</strong> {selectedStation.lat}</div>
-          <div><strong>Lng:</strong> {selectedStation.lng}</div>
-          <div>
+          <div className="mb-2"><strong>ID:</strong> {selectedStation.stanica_id}</div>
+          <div className="mb-2"><strong>Lat:</strong> {selectedStation.lat}</div>
+          <div className="mb-2"><strong>Lng:</strong> {selectedStation.lng}</div>
+          <div className="mb-3">
             <strong>Status:</strong>{" "}
             {selectedStation.aktivna ? "Aktivna" : "Neaktivna"}
+          </div>
+
+          <div className="border-top pt-3">
+            <h6 className="mb-2">Linije koje prolaze:</h6>
+            {loadingLinije ? (
+              <div className="text-muted">Učitavanje...</div>
+            ) : linijeZaStanicu.length > 0 ? (
+              <div className="d-flex flex-wrap gap-2">
+                {linijeZaStanicu.map(linija => (
+                  <span
+                    key={linija.linija_id}
+                    className="fw-bold"
+                    style={{
+                      backgroundColor:
+                        linija.tip === 1 ? "#0d6efd" : linija.tip === 2 ? "#dc3545" : "#ffa200",
+                      color: "white",
+                      padding: "4px 10px",
+                      borderRadius: 4,
+                      fontSize: "0.85rem"
+                    }}
+                    title={linija.ime_linije}
+                  >
+                    {linija.broj}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted">Nema linija</div>
+            )}
           </div>
         </div>
       )}
