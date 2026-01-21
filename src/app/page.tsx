@@ -20,6 +20,12 @@ export default function Home() {
   const [selectedStation, setSelectedStation] = useState<Stanica | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<number | undefined>(undefined);
   const [selectedLine, setSelectedLine] = useState<Linija | null>(null);
+  
+  const [korisnikId, setKorisnikId] = useState<number | undefined>(undefined);
+  
+
+  const [omiljeneLinije, setOmiljeneLinije] = useState<number[]>([]);
+  const [loadingFavoriteLine, setLoadingFavoriteLine] = useState(false);
 
   useEffect(() => {
     const fetchStanice = async () => {
@@ -33,10 +39,47 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const auth = localStorage.getItem("auth");
+    
     if (!token && auth !== "true" && auth !== "guest") {
       router.push("/login");
+      return;
+    }
+
+    if (auth !== "guest" && token) {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setKorisnikId(user.korisnik_id);
+        } catch (error) {
+          console.error('Greška pri parsiranju korisnika:', error);
+        }
+      }
     }
   }, [router]);
+
+
+  useEffect(() => {
+    const fetchOmiljeneLinije = async () => {
+      if (!korisnikId) return;
+      
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/favorites/lines?korisnik_id=${korisnikId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        const lineIds = data.map((item: any) => item.linija_id);
+        setOmiljeneLinije(lineIds);
+      } catch (error) {
+        console.error('Greška pri učitavanju omiljenih linija:', error);
+      }
+    };
+
+    fetchOmiljeneLinije();
+  }, [korisnikId]);
 
   useEffect(() => {
     if (selectedLineId) {
@@ -57,6 +100,65 @@ export default function Home() {
       setSelectedLine(null);
     }
   }
+
+
+  const toggleFavoriteLine = async (linijaId: number) => {
+    if (!korisnikId) {
+      alert('Morate biti prijavljeni da biste dodali omiljene linije');
+      return;
+    }
+
+    setLoadingFavoriteLine(true);
+    const token = localStorage.getItem('token');
+    const isOmiljena = omiljeneLinije.includes(linijaId);
+
+    try {
+      if (isOmiljena) {
+
+        const res = await fetch(
+          `/api/favorites/lines?linija_id=${linijaId}&korisnik_id=${korisnikId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+
+        if (res.ok) {
+          setOmiljeneLinije(prev => prev.filter(id => id !== linijaId));
+        } else {
+          const error = await res.json();
+          alert(error.error || 'Greška pri uklanjanju iz omiljenih');
+        }
+      } else {
+
+        const res = await fetch('/api/favorites/lines', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            linija_id: linijaId,
+            korisnik_id: korisnikId
+          })
+        });
+
+        if (res.ok) {
+          setOmiljeneLinije(prev => [...prev, linijaId]);
+        } else {
+          const error = await res.json();
+          alert(error.error || 'Greška pri dodavanju u omiljene');
+        }
+      }
+    } catch (error) {
+      console.error('Greška:', error);
+      alert('Došlo je do greške');
+    } finally {
+      setLoadingFavoriteLine(false);
+    }
+  };
 
   function handleStationSelect(stanica: Stanica) {
     setSelectedStation(stanica);
@@ -106,6 +208,7 @@ export default function Home() {
             selectedStation={selectedStation}
             onClearSelectedStation={handleClearSelectedStation}
             onLineSelect={handleLineSelect}
+            korisnikId={korisnikId} 
           />
         </div>
         {selectedLineId && selectedLine && (
@@ -125,6 +228,31 @@ export default function Home() {
             }}
           >
             <span>Prikazana ruta za liniju {selectedLine.broj}</span>
+            
+   
+            {korisnikId && (
+              <button
+                onClick={() => toggleFavoriteLine(selectedLineId)}
+                disabled={loadingFavoriteLine}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.3rem',
+                  padding: '0',
+                  cursor: 'pointer',
+                  opacity: loadingFavoriteLine ? 0.5 : 1,
+                  lineHeight: 1
+                }}
+                title={
+                  omiljeneLinije.includes(selectedLineId)
+                    ? 'Ukloni iz omiljenih'
+                    : 'Dodaj u omiljene'
+                }
+              >
+                {omiljeneLinije.includes(selectedLineId) ? '⭐' : '☆'}
+              </button>
+            )}
+
             <button 
               onClick={handleClearLine}
               className="btn btn-sm btn-outline-secondary"

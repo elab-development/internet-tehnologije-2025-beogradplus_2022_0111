@@ -8,12 +8,14 @@ export default function Searchbar({
   onStationSelect,
   selectedStation,
   onClearSelectedStation,
-  onLineSelect
+  onLineSelect,
+  korisnikId 
 }: {
   onStationSelect?: (stanica: Stanica) => void,
   selectedStation?: Stanica | null,
   onClearSelectedStation?: () => void,
-  onLineSelect?: (linija_id: number) => void
+  onLineSelect?: (linija_id: number) => void,
+  korisnikId?: number 
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -25,6 +27,9 @@ export default function Searchbar({
   const [linije, setLinije] = useState<Linija[]>([]);
   const [linijeZaStanicu, setLinijeZaStanicu] = useState<Linija[]>([]);
   const [loadingLinije, setLoadingLinije] = useState(false);
+  
+  const [omiljeneStanice, setOmiljeneStanice] = useState<number[]>([]);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +49,29 @@ export default function Searchbar({
     fetchStanice();
     fetchLinije();
   }, []);
+
+
+  useEffect(() => {
+    const fetchOmiljene = async () => {
+      if (!korisnikId) return;
+      
+      try {
+        const token = localStorage.getItem('token'); 
+        const res = await fetch(`/api/favorites/stations?korisnik_id=${korisnikId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        const stationIds = data.map((item: any) => item.stanica_id);
+        setOmiljeneStanice(stationIds);
+      } catch (error) {
+        console.error('Greška pri učitavanju omiljenih:', error);
+      }
+    };
+
+    fetchOmiljene();
+  }, [korisnikId]);
 
   useEffect(() => {
     const fetchLinijeZaStanicu = async () => {
@@ -67,6 +95,65 @@ export default function Searchbar({
 
     fetchLinijeZaStanicu();
   }, [selectedStation]);
+
+
+  const toggleFavorite = async (stanicaId: number) => {
+    if (!korisnikId) {
+      alert('Morate biti prijavljeni da biste dodali omiljene stanice');
+      return;
+    }
+
+    setLoadingFavorite(true);
+    const token = localStorage.getItem('token');
+    const isOmiljena = omiljeneStanice.includes(stanicaId);
+
+    try {
+      if (isOmiljena) {
+
+        const res = await fetch(
+          `/api/favorites/stations?stanica_id=${stanicaId}&korisnik_id=${korisnikId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+
+        if (res.ok) {
+          setOmiljeneStanice(prev => prev.filter(id => id !== stanicaId));
+        } else {
+          const error = await res.json();
+          alert(error.error || 'Greška pri uklanjanju iz omiljenih');
+        }
+      } else {
+   
+        const res = await fetch('/api/favorites/stations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            stanica_id: stanicaId,
+            korisnik_id: korisnikId
+          })
+        });
+
+        if (res.ok) {
+          setOmiljeneStanice(prev => [...prev, stanicaId]);
+        } else {
+          const error = await res.json();
+          alert(error.error || 'Greška pri dodavanju u omiljene');
+        }
+      }
+    } catch (error) {
+      console.error('Greška:', error);
+      alert('Došlo je do greške');
+    } finally {
+      setLoadingFavorite(false);
+    }
+  };
 
   function handleSearch() {
     setOpen(true);
@@ -238,12 +325,36 @@ export default function Searchbar({
             overflowY: "auto"
           }}
         >
-          <div className="d-flex justify-content-between mb-3">
-            <h6>{selectedStation.naziv}</h6>
-            <button
-              className="btn-close"
-              onClick={() => onClearSelectedStation && onClearSelectedStation()}
-            />
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h6 className="mb-0">{selectedStation.naziv}</h6>
+            <div className="d-flex gap-2">
+              {korisnikId && (
+                <button
+                  className="btn btn-sm"
+                  onClick={() => toggleFavorite(selectedStation.stanica_id)}
+                  disabled={loadingFavorite}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '1.5rem',
+                    padding: '0',
+                    cursor: 'pointer',
+                    opacity: loadingFavorite ? 0.5 : 1
+                  }}
+                  title={
+                    omiljeneStanice.includes(selectedStation.stanica_id)
+                      ? 'Ukloni iz omiljenih'
+                      : 'Dodaj u omiljene'
+                  }
+                >
+                  {omiljeneStanice.includes(selectedStation.stanica_id) ? '⭐' : '☆'}
+                </button>
+              )}
+              <button
+                className="btn-close"
+                onClick={() => onClearSelectedStation && onClearSelectedStation()}
+              />
+            </div>
           </div>
 
           <div className="mb-2"><strong>ID:</strong> {selectedStation.stanica_id}</div>
