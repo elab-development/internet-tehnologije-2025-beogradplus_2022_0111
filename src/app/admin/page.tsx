@@ -692,7 +692,9 @@ export default function AdminPage() {
       `}</style>
 
       <div style={{ width: '7vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}>
-        <Sidebar />
+        <Sidebar onOpenFavorites={function (): void {
+          throw new Error('Function not implemented.')
+        } } />
       </div>
 
       <div className="flex-grow-1 position-relative" style={{ marginLeft: '7vw' }}>
