@@ -2,7 +2,11 @@
 import { useState, useRef } from 'react';
 import PopupKorisnik from './popupkorisnik';
 
-export default function Sidebar() {
+interface SidebarProps {
+    onOpenFavorites: () => void;
+}
+
+export default function Sidebar({ onOpenFavorites }: SidebarProps) {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const korisnikButtonRef = useRef<HTMLDivElement>(null);
 
@@ -64,7 +68,7 @@ export default function Sidebar() {
                 >
                     O nama
                 </div>
-                
+
                 <div
                     ref={korisnikButtonRef}
                     onClick={() => setIsPopupOpen(!isPopupOpen)}
@@ -94,6 +98,7 @@ export default function Sidebar() {
                     isOpen={isPopupOpen}
                     onClose={() => setIsPopupOpen(false)}
                     triggerRef={korisnikButtonRef}
+                    onOpenFavorites={onOpenFavorites}
                 />
             </nav>
         </aside>

@@ -7,9 +7,10 @@ interface PopupKorisnikProps {
   isOpen: boolean;
   onClose: () => void;
   triggerRef: React.RefObject<HTMLElement | null>;
+  onOpenFavorites: () => void;
 }
 
-export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKorisnikProps) {
+export default function PopupKorisnik({ isOpen, onClose, triggerRef, onOpenFavorites }: PopupKorisnikProps) {
   const router = useRouter();
   const popupRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -285,6 +286,40 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef }: PopupKori
             </button>
           ) : (
             <>
+
+              <button
+                onClick={() => {
+                  onClose(); 
+                  onOpenFavorites(); 
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  boxShadow: '0 4px 12px rgba(253, 160, 133, 0.3)',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(253, 160, 133, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(253, 160, 133, 0.3)';
+                }}
+              >
+                <span>⭐</span> Omiljeno
+              </button>
+
               {korisnik?.uloga_id === 2 && (
                 <button
                   onClick={handleAdminPanel}
