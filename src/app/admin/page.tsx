@@ -694,7 +694,7 @@ export default function AdminPage() {
       <div style={{ width: '7vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}>
         <Sidebar onOpenFavorites={function (): void {
           throw new Error('Function not implemented.')
-        } } />
+        }} />
       </div>
 
       <div className="flex-grow-1 position-relative" style={{ marginLeft: '7vw' }}>
@@ -812,13 +812,13 @@ export default function AdminPage() {
                   </div>
                   <div className="mb-2">
                     <select
-                      value={linijaForm.tip}
+                      value={linijaForm.tip || 1} 
                       onChange={e => setLinijaForm({ ...linijaForm, tip: Number(e.target.value) })}
                       className="form-select form-select-sm"
                     >
-                      <option value="autobus">Autobus</option>
-                      <option value="tramvaj">Tramvaj</option>
-                      <option value="trolejbus">Trolejbus</option>
+                      <option value={1}>Autobus</option>
+                      <option value={2}>Tramvaj</option>
+                      <option value={3}>Trolejbus</option>
                     </select>
                   </div>
 
