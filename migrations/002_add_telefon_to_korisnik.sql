@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE korisnik
+  ADD COLUMN telefon VARCHAR(20);
+
+COMMIT;
