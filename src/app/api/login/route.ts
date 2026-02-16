@@ -11,6 +11,44 @@ const supabase = createClient(
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
+/**
+ * @swagger
+ * /api/login:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Login or register user
+ *     description: |
+ *       Controlled by `akcija` field in request body:
+ *       - `log`: login existing user
+ *       - `reg`: register new user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *       201:
+ *         description: Registration successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *       500:
+ *         description: Validation or server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();

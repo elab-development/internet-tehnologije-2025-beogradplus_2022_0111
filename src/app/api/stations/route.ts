@@ -7,6 +7,141 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+/**
+ * @swagger
+ * /api/stations:
+ *   get:
+ *     tags:
+ *       - Stations
+ *     summary: List stations
+ *     parameters:
+ *       - in: query
+ *         name: naziv
+ *         schema:
+ *           type: string
+ *         description: Filter by partial station name.
+ *     responses:
+ *       200:
+ *         description: List of stations.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Station'
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   post:
+ *     tags:
+ *       - Stations
+ *     summary: Create station
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               naziv:
+ *                 type: string
+ *               lat:
+ *                 type: number
+ *               lng:
+ *                 type: number
+ *               aktivna:
+ *                 type: boolean
+ *             required:
+ *               - naziv
+ *               - lat
+ *               - lng
+ *               - aktivna
+ *     responses:
+ *       201:
+ *         description: Created station.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Station'
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   put:
+ *     tags:
+ *       - Stations
+ *     summary: Update station
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               stanica_id:
+ *                 type: integer
+ *               naziv:
+ *                 type: string
+ *               lat:
+ *                 type: number
+ *               lng:
+ *                 type: number
+ *               aktivna:
+ *                 type: boolean
+ *             required:
+ *               - stanica_id
+ *     responses:
+ *       201:
+ *         description: Updated station data.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Station'
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   delete:
+ *     tags:
+ *       - Stations
+ *     summary: Delete station
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Station ID.
+ *     responses:
+ *       200:
+ *         description: Delete result.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                   example: 201
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 export async function GET(request: NextRequest) {
     try {
         const parametri = Object.fromEntries(request.nextUrl.searchParams);

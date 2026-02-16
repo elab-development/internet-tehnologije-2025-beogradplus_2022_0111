@@ -34,6 +34,15 @@ docker compose down
 
 The app reads environment variables from `.env` through `docker-compose.yml` (`env_file`).
 
+## Swagger / OpenAPI
+
+API documentation is available in two forms:
+
+- Raw OpenAPI JSON: `http://localhost:3000/api/docs`
+- Swagger UI: `http://localhost:3000/docs`
+
+To add endpoints into docs, place OpenAPI JSDoc blocks above route handlers in `src/app/api/**/route.ts`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

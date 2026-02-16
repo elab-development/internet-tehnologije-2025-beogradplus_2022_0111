@@ -6,6 +6,175 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+/**
+ * @swagger
+ * /api/lines:
+ *   get:
+ *     tags:
+ *       - Lines
+ *     summary: List lines or fetch related entities
+ *     description: |
+ *       Returns lines by default. Use special query combinations to return related data:
+ *       - `stanica_id`: returns lines passing through a station
+ *       - `linija_id` + `stanice=true`: returns stations for a line
+ *     parameters:
+ *       - in: query
+ *         name: ime_linije
+ *         schema:
+ *           type: string
+ *         description: Filter by line name.
+ *       - in: query
+ *         name: broj
+ *         schema:
+ *           type: string
+ *         description: Filter by line number.
+ *       - in: query
+ *         name: linija_id
+ *         schema:
+ *           type: integer
+ *         description: Line ID for special lookups.
+ *       - in: query
+ *         name: stanice
+ *         schema:
+ *           type: boolean
+ *         description: When `true` together with `linija_id`, returns line stations.
+ *       - in: query
+ *         name: stanica_id
+ *         schema:
+ *           type: integer
+ *         description: Returns lines assigned to this station.
+ *     responses:
+ *       200:
+ *         description: Lines or stations, depending on query params.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 oneOf:
+ *                   - $ref: '#/components/schemas/Line'
+ *                   - $ref: '#/components/schemas/Station'
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   post:
+ *     tags:
+ *       - Lines
+ *     summary: Create line and assign stations
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               broj:
+ *                 type: string
+ *               tip:
+ *                 type: integer
+ *               ime_linije:
+ *                 type: string
+ *               aktivna:
+ *                 type: boolean
+ *               stanice:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *             required:
+ *               - broj
+ *               - tip
+ *               - ime_linije
+ *               - aktivna
+ *               - stanice
+ *     responses:
+ *       200:
+ *         description: Insert completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                   example: 201
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   put:
+ *     tags:
+ *       - Lines
+ *     summary: Update line and optionally re-order stations
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               linija_id:
+ *                 type: integer
+ *               broj:
+ *                 type: string
+ *               tip:
+ *                 type: integer
+ *               ime_linije:
+ *                 type: string
+ *               aktivna:
+ *                 type: boolean
+ *               stanice:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *             required:
+ *               - linija_id
+ *     responses:
+ *       200:
+ *         description: Update completed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   delete:
+ *     tags:
+ *       - Lines
+ *     summary: Delete line
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Delete result.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                   example: 201
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 export async function GET(request: NextRequest) {
     try {
         const parametri = Object.fromEntries(request.nextUrl.searchParams);
