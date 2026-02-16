@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapContainer, TileLayer } from 'react-leaflet'
+import dynamic from 'next/dynamic'
 import 'leaflet/dist/leaflet.css'
 import Sidebar from '../../components/sidebar'
 import Bubble from '../../components/bubble'
@@ -9,6 +9,16 @@ import StationItem from '../../components/station'
 import LineItem from '../../components/line'
 
 import { Stanica, Linija } from '../../types/modeli'
+
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+)
+
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+)
 
 export default function AdminPage() {
   const router = useRouter()
@@ -692,9 +702,7 @@ export default function AdminPage() {
       `}</style>
 
       <div style={{ width: '7vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000 }}>
-        <Sidebar onOpenFavorites={function (): void {
-          throw new Error('Function not implemented.')
-        }} />
+        <Sidebar onOpenFavorites={() => {}} />
       </div>
 
       <div className="flex-grow-1 position-relative" style={{ marginLeft: '7vw' }}>

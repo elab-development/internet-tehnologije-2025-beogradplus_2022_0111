@@ -26,7 +26,7 @@ export default function AboutUs() {
         left: 0,
         zIndex: 1000
       }}>
-        <Sidebar />
+        <Sidebar onOpenFavorites={() => {}} />
       </div>
 
       <div className="flex-grow-1 position-relative" style={{ marginLeft: "7vw" }}>
