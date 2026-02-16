@@ -4,17 +4,17 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 /**
- * @swagger
+ * @openapi
  * /api/admin/verify:
  *   get:
  *     tags:
  *       - Admin
- *     summary: Verify JWT token and return user claims
+ *     summary: Proveri JWT token i vrati korisnicke claim-ove
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Token is valid.
+ *         description: Token je validan.
  *         content:
  *           application/json:
  *             schema:
@@ -23,7 +23,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
  *                 korisnik:
  *                   $ref: '#/components/schemas/AuthUser'
  *       401:
- *         description: Token missing or invalid.
+ *         description: Token nedostaje ili nije validan.
  *         content:
  *           application/json:
  *             schema:

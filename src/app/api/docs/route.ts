@@ -2,16 +2,16 @@ import { NextResponse } from "next/server";
 import { swaggerSpec } from "@/lib/swagger";
 
 /**
- * @swagger
+ * @openapi
  * /api/docs:
  *   get:
  *     tags:
  *       - Docs
- *     summary: Get OpenAPI JSON document
- *     description: Returns the generated OpenAPI specification used by Swagger UI.
+ *     summary: Preuzmi OpenAPI JSON dokument
+ *     description: Vraca generisanu OpenAPI specifikaciju koju koristi Swagger UI.
  *     responses:
  *       200:
- *         description: OpenAPI document
+ *         description: OpenAPI dokument
  *         content:
  *           application/json:
  *             schema:

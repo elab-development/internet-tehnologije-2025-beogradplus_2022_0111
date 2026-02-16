@@ -8,21 +8,21 @@ const supabase = createClient(
 );
 
 /**
- * @swagger
+ * @openapi
  * /api/stations:
  *   get:
  *     tags:
  *       - Stations
- *     summary: List stations
+ *     summary: Lista stanica
  *     parameters:
  *       - in: query
  *         name: naziv
  *         schema:
  *           type: string
- *         description: Filter by partial station name.
+ *         description: Filtriranje po delu naziva stanice.
  *     responses:
  *       200:
- *         description: List of stations.
+ *         description: Lista stanica.
  *         content:
  *           application/json:
  *             schema:
@@ -30,7 +30,7 @@ const supabase = createClient(
  *               items:
  *                 $ref: '#/components/schemas/Station'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -38,7 +38,7 @@ const supabase = createClient(
  *   post:
  *     tags:
  *       - Stations
- *     summary: Create station
+ *     summary: Kreiranje stanice
  *     requestBody:
  *       required: true
  *       content:
@@ -61,7 +61,7 @@ const supabase = createClient(
  *               - aktivna
  *     responses:
  *       201:
- *         description: Created station.
+ *         description: Stanica je uspesno kreirana.
  *         content:
  *           application/json:
  *             schema:
@@ -69,7 +69,7 @@ const supabase = createClient(
  *               items:
  *                 $ref: '#/components/schemas/Station'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -77,7 +77,7 @@ const supabase = createClient(
  *   put:
  *     tags:
  *       - Stations
- *     summary: Update station
+ *     summary: Azuriranje stanice
  *     requestBody:
  *       required: true
  *       content:
@@ -99,7 +99,7 @@ const supabase = createClient(
  *               - stanica_id
  *     responses:
  *       201:
- *         description: Updated station data.
+ *         description: Podaci o stanici su uspesno azurirani.
  *         content:
  *           application/json:
  *             schema:
@@ -107,7 +107,7 @@ const supabase = createClient(
  *               items:
  *                 $ref: '#/components/schemas/Station'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -115,17 +115,17 @@ const supabase = createClient(
  *   delete:
  *     tags:
  *       - Stations
- *     summary: Delete station
+ *     summary: Brisanje stanice
  *     parameters:
  *       - in: query
  *         name: id
  *         required: true
  *         schema:
  *           type: integer
- *         description: Station ID.
+ *         description: ID stanice.
  *     responses:
  *       200:
- *         description: Delete result.
+ *         description: Rezultat brisanja.
  *         content:
  *           application/json:
  *             schema:
@@ -135,7 +135,7 @@ const supabase = createClient(
  *                   type: integer
  *                   example: 201
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:

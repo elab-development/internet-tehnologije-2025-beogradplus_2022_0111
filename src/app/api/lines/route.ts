@@ -7,45 +7,45 @@ const supabase = createClient(
 );
 
 /**
- * @swagger
+ * @openapi
  * /api/lines:
  *   get:
  *     tags:
  *       - Lines
- *     summary: List lines or fetch related entities
+ *     summary: Lista linija ili povezanih entiteta
  *     description: |
- *       Returns lines by default. Use special query combinations to return related data:
- *       - `stanica_id`: returns lines passing through a station
- *       - `linija_id` + `stanice=true`: returns stations for a line
+ *       Podrazumevano vraca linije. Specijalne kombinacije query parametara vracaju povezane podatke:
+ *       - `stanica_id`: vraca linije koje prolaze kroz stanicu
+ *       - `linija_id` + `stanice=true`: vraca stanice za datu liniju
  *     parameters:
  *       - in: query
  *         name: ime_linije
  *         schema:
  *           type: string
- *         description: Filter by line name.
+ *         description: Filtriranje po nazivu linije.
  *       - in: query
  *         name: broj
  *         schema:
  *           type: string
- *         description: Filter by line number.
+ *         description: Filtriranje po broju linije.
  *       - in: query
  *         name: linija_id
  *         schema:
  *           type: integer
- *         description: Line ID for special lookups.
+ *         description: ID linije za specijalne upite.
  *       - in: query
  *         name: stanice
  *         schema:
  *           type: boolean
- *         description: When `true` together with `linija_id`, returns line stations.
+ *         description: Ako je `true` zajedno sa `linija_id`, vraca stanice linije.
  *       - in: query
  *         name: stanica_id
  *         schema:
  *           type: integer
- *         description: Returns lines assigned to this station.
+ *         description: Vraca linije povezane sa ovom stanicom.
  *     responses:
  *       200:
- *         description: Lines or stations, depending on query params.
+ *         description: Linije ili stanice, u zavisnosti od query parametara.
  *         content:
  *           application/json:
  *             schema:
@@ -55,7 +55,7 @@ const supabase = createClient(
  *                   - $ref: '#/components/schemas/Line'
  *                   - $ref: '#/components/schemas/Station'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -63,7 +63,7 @@ const supabase = createClient(
  *   post:
  *     tags:
  *       - Lines
- *     summary: Create line and assign stations
+ *     summary: Kreiranje linije i dodela stanica
  *     requestBody:
  *       required: true
  *       content:
@@ -91,7 +91,7 @@ const supabase = createClient(
  *               - stanice
  *     responses:
  *       200:
- *         description: Insert completed.
+ *         description: Unos je uspesno zavrsen.
  *         content:
  *           application/json:
  *             schema:
@@ -101,7 +101,7 @@ const supabase = createClient(
  *                   type: integer
  *                   example: 201
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -109,7 +109,7 @@ const supabase = createClient(
  *   put:
  *     tags:
  *       - Lines
- *     summary: Update line and optionally re-order stations
+ *     summary: Azuriranje linije i opcionalna promena redosleda stanica
  *     requestBody:
  *       required: true
  *       content:
@@ -135,13 +135,13 @@ const supabase = createClient(
  *               - linija_id
  *     responses:
  *       200:
- *         description: Update completed.
+ *         description: Azuriranje je uspesno zavrseno.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -149,7 +149,7 @@ const supabase = createClient(
  *   delete:
  *     tags:
  *       - Lines
- *     summary: Delete line
+ *     summary: Brisanje linije
  *     parameters:
  *       - in: query
  *         name: id
@@ -158,7 +158,7 @@ const supabase = createClient(
  *           type: integer
  *     responses:
  *       200:
- *         description: Delete result.
+ *         description: Rezultat brisanja.
  *         content:
  *           application/json:
  *             schema:
@@ -168,7 +168,7 @@ const supabase = createClient(
  *                   type: integer
  *                   example: 201
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:

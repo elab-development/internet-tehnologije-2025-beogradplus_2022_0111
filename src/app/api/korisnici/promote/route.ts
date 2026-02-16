@@ -10,12 +10,12 @@ const supabase = createClient(
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 /**
- * @swagger
+ * @openapi
  * /api/korisnici/promote:
  *   put:
  *     tags:
  *       - Admin
- *     summary: Change user role (promote/demote)
+ *     summary: Promena korisnicke uloge (promocija/degradacija)
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -26,7 +26,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
  *             $ref: '#/components/schemas/PromoteRequest'
  *     responses:
  *       200:
- *         description: Role changed successfully.
+ *         description: Uloga je uspesno promenjena.
  *         content:
  *           application/json:
  *             schema:
@@ -40,31 +40,31 @@ const JWT_SECRET = process.env.JWT_SECRET!;
  *                     type: object
  *                     additionalProperties: true
  *       400:
- *         description: Missing input data.
+ *         description: Nedostaju ulazni podaci.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Unauthorized.
+ *         description: Neautorizovan pristup.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: Forbidden (not admin or user not found).
+ *         description: Zabranjeno (nije admin ili korisnik nije pronadjen).
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Target user does not exist.
+ *         description: Ciljni korisnik ne postoji.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:

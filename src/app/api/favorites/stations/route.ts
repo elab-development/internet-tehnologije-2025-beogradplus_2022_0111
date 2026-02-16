@@ -7,12 +7,12 @@ const supabase = createClient(
 );
 
 /**
- * @swagger
+ * @openapi
  * /api/favorites/stations:
  *   get:
  *     tags:
  *       - Favorites
- *     summary: List favorite stations for a user
+ *     summary: Lista omiljenih stanica za korisnika
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -21,10 +21,10 @@ const supabase = createClient(
  *         required: true
  *         schema:
  *           type: integer
- *         description: User ID.
+ *         description: ID korisnika.
  *     responses:
  *       200:
- *         description: Favorite stations.
+ *         description: Omiljene stanice.
  *         content:
  *           application/json:
  *             schema:
@@ -32,19 +32,19 @@ const supabase = createClient(
  *               items:
  *                 $ref: '#/components/schemas/FavoriteStation'
  *       400:
- *         description: Missing query parameter.
+ *         description: Nedostaje query parametar.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Missing bearer token.
+ *         description: Nedostaje bearer token.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -52,7 +52,7 @@ const supabase = createClient(
  *   post:
  *     tags:
  *       - Favorites
- *     summary: Add station to favorites
+ *     summary: Dodavanje stanice u omiljene
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -71,7 +71,7 @@ const supabase = createClient(
  *               - korisnik_id
  *     responses:
  *       201:
- *         description: Favorite station created.
+ *         description: Omiljena stanica je uspesno dodata.
  *         content:
  *           application/json:
  *             schema:
@@ -79,19 +79,19 @@ const supabase = createClient(
  *               items:
  *                 $ref: '#/components/schemas/FavoriteStation'
  *       400:
- *         description: Validation error or already exists.
+ *         description: Greska validacije ili zapis vec postoji.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Missing bearer token.
+ *         description: Nedostaje bearer token.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:
@@ -99,7 +99,7 @@ const supabase = createClient(
  *   delete:
  *     tags:
  *       - Favorites
- *     summary: Remove station from favorites
+ *     summary: Uklanjanje stanice iz omiljenih
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -115,25 +115,25 @@ const supabase = createClient(
  *           type: integer
  *     responses:
  *       200:
- *         description: Favorite removed.
+ *         description: Omiljena stanica je uklonjena.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SuccessResponse'
  *       400:
- *         description: Missing query params.
+ *         description: Nedostaju query parametri.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Missing bearer token.
+ *         description: Nedostaje bearer token.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
- *         description: Server error.
+ *         description: Serverska greska.
  *         content:
  *           application/json:
  *             schema:

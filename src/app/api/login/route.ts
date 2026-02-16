@@ -12,16 +12,16 @@ const supabase = createClient(
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 /**
- * @swagger
+ * @openapi
  * /api/login:
  *   post:
  *     tags:
  *       - Auth
- *     summary: Login or register user
+ *     summary: Prijava ili registracija korisnika
  *     description: |
- *       Controlled by `akcija` field in request body:
- *       - `log`: login existing user
- *       - `reg`: register new user
+ *       Ponasanje endpointa zavisi od polja `akcija` u request body-ju:
+ *       - `log`: prijava postojeceg korisnika
+ *       - `reg`: registracija novog korisnika
  *     requestBody:
  *       required: true
  *       content:
@@ -30,19 +30,19 @@ const JWT_SECRET = process.env.JWT_SECRET!;
  *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
- *         description: Login successful.
+ *         description: Uspesna prijava.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/LoginResponse'
  *       201:
- *         description: Registration successful.
+ *         description: Uspesna registracija.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/LoginResponse'
  *       500:
- *         description: Validation or server error.
+ *         description: Greska validacije ili serverska greska.
  *         content:
  *           application/json:
  *             schema:
