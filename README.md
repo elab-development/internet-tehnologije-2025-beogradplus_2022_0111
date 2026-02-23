@@ -1,53 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BeogradPlus
 
-## Getting Started
+## Opis aplikacije
+BeogradPlus je web aplikacija za pregled i upravljanje gradskim prevozom u Beogradu.  
+Sadrzi rad sa stanicama i linijama, prijavu/registraciju korisnika, omiljene linije i stanice, kao i admin funkcionalnosti.  
+API dokumentacija je dostupna kroz Swagger (`/docs`) i OpenAPI JSON (`/api/docs`).
 
-First, run the development server:
+## Koriscene tehnologije
+- Next.js (App Router)
+- React
+- TypeScript
+- Supabase (`@supabase/supabase-js`)
+- Swagger/OpenAPI (`swagger-jsdoc`, `swagger-ui-react`)
+- Docker i Docker Compose
 
+## Lokalno pokretanje aplikacije
+1. Kloniraj repozitorijum i udji u projekat:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url>
+cd internet-tehnologije-2025-beogradplus_2022_0111
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Napravi `.env` (i po potrebi `.env.local`) fajl sa potrebnim promenljivama:
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+JWT_SECRET=...
+salt_rounds=10
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-## Docker
+3. Instaliraj zavisnosti:
+```bash
+npm install
+```
 
-1. Build and start the container:
+4. Pokreni development server:
+```bash
+npm run dev
+```
 
+5. Otvori aplikaciju:
+- App: `http://localhost:3000`
+- Swagger UI: `http://localhost:3000/docs`
+- OpenAPI JSON: `http://localhost:3000/api/docs`
+
+## Pokretanje pomocu Dockera i Docker Compose-a
+1. Proveri da postoji `.env` fajl u root folderu projekta.
+
+2. Build + start:
 ```bash
 docker compose up --build -d
 ```
 
-2. Open the app at [http://localhost:3000](http://localhost:3000).
+3. Otvori aplikaciju:
+- App: `http://localhost:3000`
+- Swagger UI: `http://localhost:3000/docs`
+- OpenAPI JSON: `http://localhost:3000/api/docs`
 
-3. Stop containers:
-
+4. Zaustavljanje kontejnera:
 ```bash
 docker compose down
 ```
-
-The app reads environment variables from `.env` through `docker-compose.yml` (`env_file`).
-
-## Swagger / OpenAPI
-
-API documentation is available in two forms:
-
-- Raw OpenAPI JSON: `http://localhost:3000/api/docs`
-- Swagger UI: `http://localhost:3000/docs`
-
-To add endpoints into docs, place OpenAPI JSDoc blocks above route handlers in `src/app/api/**/route.ts`.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
