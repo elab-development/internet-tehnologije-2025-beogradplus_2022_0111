@@ -17,6 +17,8 @@ export default function Searchbar({
   onLineSelect?: (linija_id: number) => void,
   korisnikId?: number 
 }) {
+  const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
+
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -35,15 +37,23 @@ export default function Searchbar({
 
   useEffect(() => {
     const fetchStanice = async () => {
-      const res = await fetch('/api/stations');
-      const data = await res.json();
-      setStanice(data);
+      try {
+        const res = await fetch('/api/stations');
+        const data = await res.json();
+        setStanice(asArray<Stanica>(data));
+      } catch {
+        setStanice([]);
+      }
     };
 
     const fetchLinije = async () => {
-      const res = await fetch('/api/lines');
-      const data = await res.json();
-      setLinije(data);
+      try {
+        const res = await fetch('/api/lines');
+        const data = await res.json();
+        setLinije(asArray<Linija>(data));
+      } catch {
+        setLinije([]);
+      }
     };
 
     fetchStanice();
@@ -63,7 +73,7 @@ export default function Searchbar({
           }
         });
         const data = await res.json();
-        const stationIds = data.map((item: any) => item.stanica_id);
+        const stationIds = asArray<any>(data).map((item: any) => item.stanica_id);
         setOmiljeneStanice(stationIds);
       } catch (error) {
         console.error('Greška pri učitavanju omiljenih:', error);
@@ -84,7 +94,7 @@ export default function Searchbar({
       try {
         const res = await fetch(`/api/lines?stanica_id=${selectedStation.stanica_id}`);
         const data = await res.json();
-        setLinijeZaStanicu(data);
+        setLinijeZaStanicu(asArray<Linija>(data));
       } catch (error) {
         console.error('Greška pri učitavanju linija:', error);
         setLinijeZaStanicu([]);
@@ -167,11 +177,11 @@ export default function Searchbar({
     }
   }
 
-  const filteredStanice = stanice.filter(s =>
+  const filteredStanice = asArray<Stanica>(stanice).filter(s =>
     s.naziv.toLowerCase().includes(query.toLowerCase())
   );
 
-  const filteredLinije = linije.filter(l =>
+  const filteredLinije = asArray<Linija>(linije).filter(l =>
     l.broj.toLowerCase().includes(query.toLowerCase()) ||
     l.ime_linije.toLowerCase().includes(query.toLowerCase())
   );

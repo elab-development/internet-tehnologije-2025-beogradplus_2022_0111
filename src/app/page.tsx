@@ -14,6 +14,8 @@ function donesiMapu() {
 const Map = dynamic(donesiMapu, { ssr: false });
 
 export default function Home() {
+  const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
+
   const router = useRouter();
   const [mapCenter, setMapCenter] = useState<[number, number]>([44.7866, 20.4489]);
   const [mapZoom, setMapZoom] = useState(14);
@@ -31,9 +33,14 @@ export default function Home() {
   
   useEffect(() => {
     const fetchStanice = async () => {
-      const res = await fetch('/api/stations');
-      const data = await res.json();
-      setStanice(data);
+      try {
+        const res = await fetch('/api/stations');
+        const data = await res.json();
+        setStanice(asArray<Stanica>(data));
+      } catch (error) {
+        console.error(error);
+        setStanice([]);
+      }
     };
     fetchStanice();
   }, []);
@@ -67,7 +74,7 @@ export default function Home() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        const data: OmiljenaLinija[] = await res.json();
+        const data = asArray<OmiljenaLinija>(await res.json());
         const lineIds = data.map(item => item.linija_id);
         setOmiljeneLinije(lineIds);
       }
@@ -78,7 +85,7 @@ export default function Home() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        const data: OmiljenaStanica[] = await res.json();
+        const data = asArray<OmiljenaStanica>(await res.json());
         const stIds = data.map(item => item.stanica_id); 
         setOmiljeneStanice(stIds);
       }
@@ -104,7 +111,7 @@ export default function Home() {
     try {
       const res = await fetch('/api/lines');
       const data = await res.json();
-      const line = data.find((l: Linija) => l.linija_id === lineId);
+      const line = asArray<Linija>(data).find((l: Linija) => l.linija_id === lineId);
       setSelectedLine(line || null);
     } catch (error) { console.error(error); setSelectedLine(null); }
   }

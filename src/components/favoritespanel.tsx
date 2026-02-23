@@ -23,6 +23,7 @@ export default function FavoritesPanel({
   onStationSelect,
   sveStanice
 }: FavoritesPanelProps) {
+  const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
   
   const [sveLinije, setSveLinije] = useState<Linija[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,9 +34,10 @@ export default function FavoritesPanel({
       try {
         const res = await fetch('/api/lines');
         const data = await res.json();
-        setSveLinije(data);
+        setSveLinije(asArray<Linija>(data));
       } catch (error) {
         console.error(error);
+        setSveLinije([]);
       } finally {
         setLoading(false);
       }
@@ -46,8 +48,8 @@ export default function FavoritesPanel({
     }
   }, [isOpen]);
 
-  const favoriteLinesData = sveLinije.filter(l => omiljeneId.includes(l.linija_id));
-  const favoriteStationsData = sveStanice.filter(s => omiljeneStaniceId.includes(s.stanica_id));
+  const favoriteLinesData = asArray<Linija>(sveLinije).filter(l => omiljeneId.includes(l.linija_id));
+  const favoriteStationsData = asArray<Stanica>(sveStanice).filter(s => omiljeneStaniceId.includes(s.stanica_id));
 
 
   const tabBaseStyle = {
