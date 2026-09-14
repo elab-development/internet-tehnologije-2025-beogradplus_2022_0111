@@ -16,20 +16,11 @@ const TileLayer = dynamic(
 
 export default function AboutUs() {
   return (
-    <div className="d-flex" style={{ minHeight: "100vh", width: "100vw" }}>
+    <div style={{ minHeight: "100vh", width: "100vw", display: "flex", flexDirection: "column" }}>
 
-      <div style={{
-        width: "7vw",
-        height: "100vh",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        zIndex: 1000
-      }}>
-        <Sidebar onOpenFavorites={() => {}} />
-      </div>
+      <Sidebar onOpenFavorites={() => {}} />
 
-      <div className="flex-grow-1 position-relative" style={{ marginLeft: "7vw" }}>
+      <div className="flex-grow-1 position-relative" style={{ minHeight: 0 }}>
 
         <div style={{
           position: "fixed",

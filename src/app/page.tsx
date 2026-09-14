@@ -200,7 +200,7 @@ export default function Home() {
   const trenutniNazivSmera = smerovi.find(s => s.smer === selectedSmer)?.naziv;
 
   return (
-    <div style={{ height: "100vh", width: "100vw", display: "flex" }}>
+    <div style={{ height: "100vh", width: "100vw", display: "flex", flexDirection: "column" }}>
       <Sidebar onOpenFavorites={() => setShowFavorites(true)} />
       
       <FavoritesPanel 
@@ -213,7 +213,7 @@ export default function Home() {
         sveStanice={stanice}
       />
 
-      <div style={{ flex: 1, position: "relative" }}>
+      <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
         <div style={{ position: "relative", zIndex: 0, height: "100%", width: "100%" }}>
           <Map
             visina="100%"
