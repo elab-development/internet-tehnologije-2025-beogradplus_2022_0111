@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import 'leaflet/dist/leaflet.css'
+//import 'leaflet/dist/leaflet.css'
 import Sidebar from '../../components/sidebar'
 import Bubble from '../../components/bubble'
 import StationItem from '../../components/station'
@@ -64,6 +64,9 @@ export default function AdminPage() {
   })
   const [isLoadingUpdate, setIsLoadingUpdate] = useState(false)
   const updateLinijaSearchRef = useRef<HTMLDivElement>(null)
+
+  const [updateSmer, setUpdateSmer] = useState<number>(0)
+  const [updateSmerNazivi, setUpdateSmerNazivi] = useState<{ smer: number, naziv: string }[]>([])
 
   useEffect(() => {
     if (!poruka) return
@@ -261,11 +264,6 @@ export default function AdminPage() {
       setPoruka('Unesite validan ID stanice')
       return
     }
-    if (linijaStations.some(s => s.stanica_id === id)) {
-      setPoruka('Stanica je već u listi')
-      setStationIdInput('')
-      return
-    }
     const local = stanice.find(s => s.stanica_id === id)
     if (local) {
       setLinijaStations(prev => [...prev, local])
@@ -341,7 +339,8 @@ export default function AdminPage() {
           tip: linijaForm.tip,
           ime_linije: linijaForm.ime_linije,
           aktivna: linijaForm.aktivna,
-          stanice: linijaStations.map(s => s.stanica_id)
+          stanice: linijaStations.map(s => s.stanica_id),
+          smer: 0
         })
       })
       const data = await res.json()
@@ -460,7 +459,22 @@ export default function AdminPage() {
     }
   }
 
-  const loadLinijaDataForUpdate = async (linija: Linija) => {
+  const fetchSmerNazivi = async (linijaId: number, token: string) => {
+    try {
+      const res = await fetch(`/api/lines?linija_id=${linijaId}&smerovi=true`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        setUpdateSmerNazivi(await res.json())
+      } else {
+        setUpdateSmerNazivi([])
+      }
+    } catch {
+      setUpdateSmerNazivi([])
+    }
+  }
+
+  const loadLinijaDataForUpdate = async (linija: Linija, smer: number) => {
     setIsLoadingUpdate(true)
     try {
       const token = localStorage.getItem('token')
@@ -476,7 +490,7 @@ export default function AdminPage() {
         aktivna: linija.aktivna
       })
 
-      const res = await fetch(`/api/lines?linija_id=${linija.linija_id}&stanice=true`, {
+      const res = await fetch(`/api/lines?linija_id=${linija.linija_id}&stanice=true&smer=${smer}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
 
@@ -486,6 +500,8 @@ export default function AdminPage() {
       } else {
         setUpdateLinijaStations([])
       }
+
+      await fetchSmerNazivi(linija.linija_id, token)
     } catch (error) {
       setPoruka('Greška pri učitavanju podataka linije')
       setUpdateLinijaStations([])
@@ -497,18 +513,20 @@ export default function AdminPage() {
   const handleSelectUpdateLinija = (linija: Linija) => {
     setSelectedUpdateLinija(linija)
     setOpenUpdateLinijaSearch(false)
-    loadLinijaDataForUpdate(linija)
+    setUpdateSmer(0)
+    loadLinijaDataForUpdate(linija, 0)
+  }
+
+  const handleSwitchUpdateSmer = (smer: number) => {
+    if (!selectedUpdateLinija) return
+    setUpdateSmer(smer)
+    loadLinijaDataForUpdate(selectedUpdateLinija, smer)
   }
 
   const handleAddUpdateStationById = async (idStr: string) => {
     const id = Number((idStr || '').toString().trim())
     if (!id) {
       setPoruka('Unesite validan ID stanice')
-      return
-    }
-    if (updateLinijaStations.some(s => s.stanica_id === id)) {
-      setPoruka('Stanica je već u listi')
-      setUpdateStationIdInput('')
       return
     }
 
@@ -610,7 +628,8 @@ export default function AdminPage() {
           tip: tipCode,
           ime_linije: updateEditForm.ime_linije,
           aktivna: updateEditForm.aktivna,
-          stanice: updateLinijaStations.map(s => s.stanica_id)
+          stanice: updateLinijaStations.map(s => s.stanica_id),
+          smer: updateSmer
         })
       })
 
@@ -647,6 +666,8 @@ export default function AdminPage() {
     setUpdateLinijaSearch('')
     setUpdateLinijaStations([])
     setUpdateStationIdInput('')
+    setUpdateSmer(0)
+    setUpdateSmerNazivi([])
     setUpdateEditForm({
       broj: '',
       tip: 1,
@@ -1105,6 +1126,21 @@ export default function AdminPage() {
 
                   {selectedUpdateLinija && (
                     <>
+                      <div className="d-flex gap-2 mb-3">
+                        <button
+                          className={`btn btn-sm ${updateSmer === 0 ? 'btn-primary' : 'btn-outline-primary'}`}
+                          onClick={() => handleSwitchUpdateSmer(0)}
+                        >
+                          {updateSmerNazivi.find(s => s.smer === 0)?.naziv || 'Smer 1'}
+                        </button>
+                        <button
+                          className={`btn btn-sm ${updateSmer === 1 ? 'btn-primary' : 'btn-outline-primary'}`}
+                          onClick={() => handleSwitchUpdateSmer(1)}
+                        >
+                          {updateSmerNazivi.find(s => s.smer === 1)?.naziv || 'Smer 2'}
+                        </button>
+                      </div>
+
                       {isLoadingUpdate ? (
                         <div className="text-center py-4">
                           <div className="spinner-border spinner-border-sm text-primary" role="status">
@@ -1163,7 +1199,9 @@ export default function AdminPage() {
 
                           <div className="col-md-6">
                             <div className="mb-3">
-                              <label className="form-label" style={{ fontSize: '0.85rem' }}>Stanice na liniji</label>
+                              <label className="form-label" style={{ fontSize: '0.85rem' }}>
+                                Stanice na liniji ({updateSmer === 0 ? 'Smer 1' : 'Smer 2'})
+                              </label>
 
                               <div className="input-group input-group-sm mb-2">
                                 <input
@@ -1235,7 +1273,7 @@ export default function AdminPage() {
                           <div className="col-12">
                             <div className="d-flex gap-2">
                               <button onClick={updateLinija} className="btn btn-primary btn-sm">
-                                Sačuvaj izmene
+                                Sačuvaj izmene ({updateSmer === 0 ? 'Smer 1' : 'Smer 2'})
                               </button>
                               <button onClick={resetUpdateForm} className="btn btn-outline-secondary btn-sm">
                                 Otkaži

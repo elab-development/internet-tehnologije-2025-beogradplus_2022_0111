@@ -233,7 +233,7 @@ export default function Searchbar({
         <input
           type="text"
           className="form-control border-0 px-4"
-          placeholder="Pretraži stanice i linije..."
+          placeholder="Pretraž stanice i linije..."
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyPress={handleKeyPress}

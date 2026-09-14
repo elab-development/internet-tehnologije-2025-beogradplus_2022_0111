@@ -116,6 +116,8 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef, onOpenFavor
     }
   };
 
+  const slikaUrl = korisnik?.slika_url;
+
   return (
     <div
       ref={popupRef}
@@ -168,12 +170,31 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef, onOpenFavor
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{
-            fontSize: '48px',
             marginBottom: '8px',
-            textAlign: 'center',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+            display: 'flex',
+            justifyContent: 'center'
           }}>
-            {korisnik ? getUlogaIcon(korisnik.uloga_id) : '🎭'}
+            {slikaUrl ? (
+              <img
+                src={slikaUrl}
+                alt={korisnik?.ime || 'Korisnik'}
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                  border: '2px solid rgba(255,255,255,0.7)'
+                }}
+              />
+            ) : (
+              <span style={{
+                fontSize: '48px',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+              }}>
+                {korisnik ? getUlogaIcon(korisnik.uloga_id) : '🎭'}
+              </span>
+            )}
           </div>
           <h3 style={{
             margin: 0,

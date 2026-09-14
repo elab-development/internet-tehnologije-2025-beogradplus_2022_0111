@@ -24,6 +24,9 @@ export default function Home() {
   const [selectedStation, setSelectedStation] = useState<Stanica | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<number | undefined>(undefined);
   const [selectedLine, setSelectedLine] = useState<Linija | null>(null);
+
+  const [selectedSmer, setSelectedSmer] = useState<number>(0);
+  const [smerovi, setSmerovi] = useState<{ smer: number, naziv: string }[]>([]);
   
   const [korisnikId, setKorisnikId] = useState<number | undefined>(undefined);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -107,6 +110,14 @@ export default function Home() {
     else { setSelectedLine(null); }
   }, [selectedLineId]);
 
+  useEffect(() => {
+    if (!selectedLineId) {
+      setSmerovi([]);
+      return;
+    }
+    fetchSmerove(selectedLineId);
+  }, [selectedLineId]);
+
   async function fetchLineInfo(lineId: number) {
     try {
       const res = await fetch('/api/lines');
@@ -114,6 +125,17 @@ export default function Home() {
       const line = asArray<Linija>(data).find((l: Linija) => l.linija_id === lineId);
       setSelectedLine(line || null);
     } catch (error) { console.error(error); setSelectedLine(null); }
+  }
+
+  async function fetchSmerove(lineId: number) {
+    try {
+      const res = await fetch(`/api/lines?linija_id=${lineId}&smerovi=true`);
+      const data = await res.json();
+      setSmerovi(asArray<{ smer: number, naziv: string }>(data));
+    } catch (error) {
+      console.error(error);
+      setSmerovi([]);
+    }
   }
 
   function handleStationSelect(stanica: Stanica) {
@@ -127,10 +149,19 @@ export default function Home() {
 
   function handleLineSelect(lineId: number) {
     setSelectedLineId(lineId);
+    setSelectedSmer(0);
     setSelectedStation(null); 
   }
 
-  function handleClearLine() { setSelectedLineId(undefined); }
+  function handleClearLine() {
+    setSelectedLineId(undefined);
+    setSelectedSmer(0);
+    setSmerovi([]);
+  }
+
+  function toggleSmer() {
+    setSelectedSmer(prev => (prev === 0 ? 1 : 0));
+  }
 
   const handleToggleFavoriteLine = async () => {
     if (!korisnikId || !selectedLineId) return;
@@ -166,6 +197,8 @@ export default function Home() {
     }
   };
 
+  const trenutniNazivSmera = smerovi.find(s => s.smer === selectedSmer)?.naziv;
+
   return (
     <div style={{ height: "100vh", width: "100vw", display: "flex" }}>
       <Sidebar onOpenFavorites={() => setShowFavorites(true)} />
@@ -190,6 +223,7 @@ export default function Home() {
             stanice={stanice}
             onMarkerClick={(s: Stanica) => handleStationSelect(s)}
             linija_id={selectedLineId}
+            smer={selectedSmer}
           />
         </div>
         
@@ -213,8 +247,8 @@ export default function Home() {
             borderRadius: '16px',
             boxShadow: '0 10px 30px rgba(0,0,0,0.15), 0 0 1px rgba(0,0,0,0.1)',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
+            gap: '12px',
             padding: '16px 24px',
             minWidth: '320px',
             maxWidth: '400px',
@@ -228,86 +262,140 @@ export default function Home() {
               }
             `}</style>
 
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '12px', 
-              flex: 1,
-              marginRight: '16px'
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
             }}>
-              <span style={{ 
-                fontSize: '26px', 
-                fontWeight: '500', 
-                color: '#212529',
-                lineHeight: '1',
-                flexShrink: 0,
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '12px', 
+                flex: 1,
+                marginRight: '16px'
               }}>
-                {selectedLine.broj}
-              </span>
-              
-              <span style={{ 
-                fontSize: '16px', 
-                color: '#495057', 
-                fontWeight: '400',
-                textShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                lineHeight: '1.25',
-                wordBreak: 'break-word'
-              }}>
-                {selectedLine.ime_linije}
-              </span>
-            </div>
+                <span style={{ 
+                  fontSize: '26px', 
+                  fontWeight: '500', 
+                  color: '#212529',
+                  lineHeight: '1',
+                  flexShrink: 0,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  {selectedLine.broj}
+                </span>
+                
+                <span style={{ 
+                  fontSize: '16px', 
+                  color: '#495057', 
+                  fontWeight: '400',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  lineHeight: '1.25',
+                  wordBreak: 'break-word'
+                }}>
+                  {selectedLine.ime_linije}
+                </span>
+              </div>
 
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '12px',
-              flexShrink: 0
-            }}>
-              {korisnikId && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '12px',
+                flexShrink: 0
+              }}>
+                {korisnikId && (
+                  <button
+                    onClick={handleToggleFavoriteLine}
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: omiljeneLinije.includes(selectedLine.linija_id) ? '#fff9db' : '#f1f3f5',
+                      color: omiljeneLinije.includes(selectedLine.linija_id) ? '#fab005' : '#9ca3af',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '24px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {omiljeneLinije.includes(selectedLine.linija_id) ? '★' : '☆'}
+                  </button>
+                )}
+
                 <button
-                  onClick={handleToggleFavoriteLine}
+                  onClick={handleClearLine}
                   style={{
                     width: '44px',
                     height: '44px',
                     borderRadius: '10px',
                     border: 'none',
-                    background: omiljeneLinije.includes(selectedLine.linija_id) ? '#fff9db' : '#f1f3f5',
-                    color: omiljeneLinije.includes(selectedLine.linija_id) ? '#fab005' : '#9ca3af',
+                    background: 'transparent',
+                    color: '#adb5bd',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '24px',
+                    fontSize: '22px',
                     transition: 'all 0.2s ease'
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#495057'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#adb5bd'}
                 >
-                  {omiljeneLinije.includes(selectedLine.linija_id) ? '★' : '☆'}
+                  ✕
                 </button>
-              )}
-
-              <button
-                onClick={handleClearLine}
-                style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: 'transparent',
-                  color: '#adb5bd',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '22px',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#495057'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#adb5bd'}
-              >
-                ✕
-              </button>
+              </div>
             </div>
+
+            {trenutniNazivSmera && (
+              <div style={{ fontSize: '13px', color: '#868e96' }}>
+                {trenutniNazivSmera}
+              </div>
+            )}
+
+            {smerovi.length > 1 ? (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {smerovi.map(s => (
+                  <button
+                    key={s.smer}
+                    onClick={() => setSelectedSmer(s.smer)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: selectedSmer === s.smer ? '#2563eb' : '#f1f3f5',
+                      color: selectedSmer === s.smer ? 'white' : '#495057',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Smer {s.smer + 1}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button
+                onClick={toggleSmer}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #dee2e6',
+                  background: 'transparent',
+                  color: '#495057',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  alignSelf: 'flex-start'
+                }}
+              >
+                Prikaži povratni smer
+              </button>
+            )}
           </div>
         )}
       </div>

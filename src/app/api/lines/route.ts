@@ -6,175 +6,6 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-/**
- * @openapi
- * /api/lines:
- *   get:
- *     tags:
- *       - Lines
- *     summary: Lista linija ili povezanih entiteta
- *     description: |
- *       Podrazumevano vraca linije. Specijalne kombinacije query parametara vracaju povezane podatke:
- *       - `stanica_id`: vraca linije koje prolaze kroz stanicu
- *       - `linija_id` + `stanice=true`: vraca stanice za datu liniju
- *     parameters:
- *       - in: query
- *         name: ime_linije
- *         schema:
- *           type: string
- *         description: Filtriranje po nazivu linije.
- *       - in: query
- *         name: broj
- *         schema:
- *           type: string
- *         description: Filtriranje po broju linije.
- *       - in: query
- *         name: linija_id
- *         schema:
- *           type: integer
- *         description: ID linije za specijalne upite.
- *       - in: query
- *         name: stanice
- *         schema:
- *           type: boolean
- *         description: Ako je `true` zajedno sa `linija_id`, vraca stanice linije.
- *       - in: query
- *         name: stanica_id
- *         schema:
- *           type: integer
- *         description: Vraca linije povezane sa ovom stanicom.
- *     responses:
- *       200:
- *         description: Linije ili stanice, u zavisnosti od query parametara.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 oneOf:
- *                   - $ref: '#/components/schemas/Line'
- *                   - $ref: '#/components/schemas/Station'
- *       500:
- *         description: Serverska greska.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *   post:
- *     tags:
- *       - Lines
- *     summary: Kreiranje linije i dodela stanica
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               broj:
- *                 type: string
- *               tip:
- *                 type: integer
- *               ime_linije:
- *                 type: string
- *               aktivna:
- *                 type: boolean
- *               stanice:
- *                 type: array
- *                 items:
- *                   type: integer
- *             required:
- *               - broj
- *               - tip
- *               - ime_linije
- *               - aktivna
- *               - stanice
- *     responses:
- *       200:
- *         description: Unos je uspesno zavrsen.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: integer
- *                   example: 201
- *       500:
- *         description: Serverska greska.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *   put:
- *     tags:
- *       - Lines
- *     summary: Azuriranje linije i opcionalna promena redosleda stanica
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               linija_id:
- *                 type: integer
- *               broj:
- *                 type: string
- *               tip:
- *                 type: integer
- *               ime_linije:
- *                 type: string
- *               aktivna:
- *                 type: boolean
- *               stanice:
- *                 type: array
- *                 items:
- *                   type: integer
- *             required:
- *               - linija_id
- *     responses:
- *       200:
- *         description: Azuriranje je uspesno zavrseno.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
- *       500:
- *         description: Serverska greska.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *   delete:
- *     tags:
- *       - Lines
- *     summary: Brisanje linije
- *     parameters:
- *       - in: query
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Rezultat brisanja.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: integer
- *                   example: 201
- *       500:
- *         description: Serverska greska.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
 export async function GET(request: NextRequest) {
     try {
         const parametri = Object.fromEntries(request.nextUrl.searchParams);
@@ -183,6 +14,8 @@ export async function GET(request: NextRequest) {
         const _linija_id = parametri["linija_id"];
         const _stanice = parametri["stanice"];
         const _stanica_id = parametri["stanica_id"];
+        const _smer = parametri["smer"];
+        const _smerovi = parametri["smerovi"];
 
         if (_stanica_id) {
             const { data, error } = await supabase
@@ -204,15 +37,33 @@ export async function GET(request: NextRequest) {
             }
 
             const linije = data.map(item => item.linija).filter(Boolean);
-            return NextResponse.json(linije);
+            const jedinstveneLinije = Array.from(
+                new Map(linije.map((l: any) => [l.linija_id, l])).values()
+            );
+            return NextResponse.json(jedinstveneLinije);
+        }
+
+        if (_linija_id && _smerovi === 'true') {
+            const { data, error } = await supabase
+                .from('linija_smer')
+                .select('smer, naziv')
+                .eq('linija_id', _linija_id)
+                .order('smer', { ascending: true });
+
+            if (error) {
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
+
+            return NextResponse.json(data);
         }
 
         if (_linija_id && _stanice === 'true') {
-            const { data, error } = await supabase
+            let upit = supabase
                 .from('linija_stanica')
                 .select(`
                     stanica_id,
                     redni_broj,
+                    smer,
                     stanica:stanica_id (
                         stanica_id,
                         naziv,
@@ -224,14 +75,27 @@ export async function GET(request: NextRequest) {
                 .eq('linija_id', _linija_id)
                 .order('redni_broj', { ascending: true });
 
+            if (_smer !== undefined) {
+                upit = upit.eq('smer', _smer);
+            }
+
+            const { data, error } = await upit;
+
             if (error) {
                 return NextResponse.json({ error: error.message }, { status: 500 });
             }
 
-            const stanice = data.map(item => item.stanica).filter(Boolean);
+            const stanice = data
+                .filter(item => item.stanica)
+                .map(item => ({
+                    ...item.stanica,
+                    redni_broj: item.redni_broj,
+                    smer: item.smer
+                }));
+
             return NextResponse.json(stanice);
         }
-        
+
         let query = supabase.from('linija').select('*');
         if (_naziv)
             query = query.like('ime_linije', `%${_naziv}%`);
@@ -250,14 +114,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { broj, tip, ime_linije, aktivna, stanice } = body;
+        const { broj, tip, ime_linije, aktivna, stanice, smer } = body;
         const { data: linija, error } = await supabase.from('linija').insert({ broj, tip, ime_linije, aktivna }).select().single();
         const linijaStanice = [];
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
         for (let i = 0; i < stanice.length; i++) {
-            linijaStanice.push({ linija_id: linija.linija_id, stanica_id: stanice[i], redni_broj: i + 1 });
+            linijaStanice.push({
+                linija_id: linija.linija_id,
+                stanica_id: stanice[i],
+                redni_broj: i + 1,
+                smer: smer ?? 0
+            });
         }
         const { error: err } = await supabase.from('linija_stanica').insert(linijaStanice).select();
         if (err) {
@@ -272,15 +141,27 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
     try {
         const body = await request.json();
-        const { linija_id, stanice, ...updateData } = body;
+        const { linija_id, stanice, smer, ...updateData } = body;
         if (Object.keys(updateData).length > 0) {
             await supabase.from('linija').update(updateData).eq('linija_id', linija_id);
         }
         if (stanice && stanice.length > 0) {
-            await supabase.from('linija_stanica').delete().eq('linija_id', linija_id);
+            const smerVrednost = smer ?? 0;
+
+            await supabase
+                .from('linija_stanica')
+                .delete()
+                .eq('linija_id', linija_id)
+                .eq('smer', smerVrednost);
+
             let linijaStanice = [];
             for (let i = 0; i < stanice.length; i++) {
-                linijaStanice.push({ linija_id: linija_id, stanica_id: stanice[i], redni_broj: i + 1 });
+                linijaStanice.push({
+                    linija_id: linija_id,
+                    stanica_id: stanice[i],
+                    redni_broj: i + 1,
+                    smer: smerVrednost
+                });
             }
             const { data, error } = await supabase.from('linija_stanica').insert(linijaStanice);
             if (error)
@@ -304,11 +185,9 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        
         return NextResponse.json({ status: 201 });
 
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
-
     }
 }

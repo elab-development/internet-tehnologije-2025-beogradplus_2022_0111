@@ -11,6 +11,7 @@ const TileLayer = dynamic(
   () => import('react-leaflet').then((mod) => mod.TileLayer),
   { ssr: false }
 )
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -24,6 +25,69 @@ export default function LoginPage() {
       router.push('/');
     }
   }, [router]);
+
+  async function handleGoogleResponse(response: any) {
+    setError("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          credential: response.credential,
+          akcija: "google"
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Greška pri Google prijavi");
+        return;
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.korisnik));
+      localStorage.setItem("auth", "true");
+
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      setError("Greška pri povezivanju sa serverom");
+    }
+  }
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+
+    script.onload = () => {
+      const google = (window as any).google;
+      if (!google) return;
+
+      google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse
+      });
+
+      const el = document.getElementById('google-signin-button');
+      if (el) {
+        google.accounts.id.renderButton(el, {
+          theme: 'outline',
+          size: 'large',
+          width: 380,
+          text: 'continue_with'
+        });
+      }
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   async function handleGuest() {
     const token = localStorage.getItem('token');
@@ -208,6 +272,13 @@ export default function LoginPage() {
           >
             {isRegister ? "Već imaš nalog? Uloguj se" : "Nemaš nalog? Registruj se"}
           </button>
+
+          <div className="position-relative my-3">
+            <hr className="m-0" />
+            <span className="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">ili</span>
+          </div>
+
+          <div id="google-signin-button" className="d-flex justify-content-center mb-3"></div>
 
           <div className="position-relative my-3">
             <hr className="m-0" />

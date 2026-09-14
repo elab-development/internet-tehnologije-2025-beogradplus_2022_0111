@@ -33,6 +33,7 @@ CREATE TABLE linija (
 CREATE TABLE linija_stanica (
   linija_id INTEGER NOT NULL,
   stanica_id INTEGER NOT NULL,
+  redni_broj INTEGER NOT NULL,
   PRIMARY KEY (linija_id, stanica_id),
   FOREIGN KEY (linija_id) REFERENCES linija(linija_id) ON DELETE CASCADE,
   FOREIGN KEY (stanica_id) REFERENCES stanica(stanica_id) ON DELETE CASCADE
@@ -41,7 +42,8 @@ CREATE TABLE linija_stanica (
 CREATE TABLE omiljena_stanica (
   korisnik_id INTEGER NOT NULL,
   stanica_id INTEGER NOT NULL,
-  PRIMARY KEY (korisnik_id, stanica_id),
+  os_id INTEGER GENERATED ALWAYS AS IDENTITY,
+  PRIMARY KEY (korisnik_id, stanica_id, os_id),
   FOREIGN KEY (korisnik_id) REFERENCES korisnik(korisnik_id) ON DELETE CASCADE,
   FOREIGN KEY (stanica_id) REFERENCES stanica(stanica_id) ON DELETE CASCADE
 );
@@ -49,7 +51,8 @@ CREATE TABLE omiljena_stanica (
 CREATE TABLE omiljena_linija (
   korisnik_id INTEGER NOT NULL,
   linija_id INTEGER NOT NULL,
-  PRIMARY KEY (korisnik_id, linija_id),
+  ol_id INTEGER GENERATED ALWAYS AS IDENTITY,
+  PRIMARY KEY (korisnik_id, linija_id, ol_id),
   FOREIGN KEY (korisnik_id) REFERENCES korisnik(korisnik_id) ON DELETE CASCADE,
   FOREIGN KEY (linija_id) REFERENCES linija(linija_id) ON DELETE CASCADE
 );

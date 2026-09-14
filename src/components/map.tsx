@@ -83,7 +83,8 @@ export default function Map({
   center = [44.7866, 20.4489],
   stanice = [],
   onMarkerClick,
-  linija_id
+  linija_id,
+  smer = 0
 }: {
   visina?: string,
   sirina?: string,
@@ -91,7 +92,8 @@ export default function Map({
   center?: [number, number],
   stanice?: any[],
   onMarkerClick?: (stanica: any) => void,
-  linija_id?: number
+  linija_id?: number,
+  smer?: number
 }) {
   const [currentCenter, setCurrentCenter] = useState<[number, number]>(center);
   const [currentZoom, setCurrentZoom] = useState<number>(zoom);
@@ -109,18 +111,18 @@ export default function Map({
 
   useEffect(() => {
     if (linija_id) {
-      fetchLineRoute(linija_id);
+      fetchLineRoute(linija_id, smer);
     } else {
       setRouteCoords([]);
       setLinijaStanice([]);
     }
-  }, [linija_id]);
+  }, [linija_id, smer]);
 
-  async function fetchLineRoute(id: number) {
+  async function fetchLineRoute(id: number, smerValue: number) {
     try {
-      const res = await fetch(`/api/lines?linija_id=${id}&stanice=true`);
+      const res = await fetch(`/api/lines?linija_id=${id}&stanice=true&smer=${smerValue}`);
       const stations = await res.json();
-      
+
       setLinijaStanice(stations);
 
       if (stations.length < 2) {
@@ -176,7 +178,7 @@ export default function Map({
         {routeCoords.length > 0 && (
           <Polyline
             positions={routeCoords}
-            color="#2563eb"
+            color={smer === 0 ? '#2563eb' : '#dc2626'}
             weight={4}
             opacity={0.7}
           />

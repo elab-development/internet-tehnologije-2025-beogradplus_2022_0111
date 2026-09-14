@@ -4,7 +4,9 @@ export interface Korisnik {
   password_hash: string;
   ime: string;
   datum_kreiranja: Date; 
-  uloga_id: number;      
+  uloga_id: number;   
+  google_id: string | null;
+  slika_url: string | null;   
 }
 
 export interface Uloga {
