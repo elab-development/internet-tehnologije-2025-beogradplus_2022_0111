@@ -26,35 +26,12 @@ function collectApiRouteFiles(dir: string): string[] {
   return files;
 }
 
-function resolveProjectRoot(): string {
-  const candidates = [
-    process.cwd(),
-    process.env.INIT_CWD,
-    path.resolve(process.cwd(), ".."),
-    path.resolve(process.cwd(), "..", ".."),
-    path.resolve(process.cwd(), "..", "..", ".."),
-    path.resolve(process.cwd(), "..", "..", "..", ".."),
-  ].filter(Boolean) as string[];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(path.join(candidate, "src", "app", "api"))) {
-      return candidate;
-    }
-  }
-
-  return process.cwd();
-}
-
-const apiRoutesGlobs = [
-  "src/app/api/**/route.ts",
-  "./src/app/api/**/route.ts",
-  "src/app/api/**/route.js",
-  "./src/app/api/**/route.js",
+const apiDirectory = path.join(process.cwd(), "src", "app", "api");
+const apiRouteFiles = collectApiRouteFiles(apiDirectory);
+const fallbackGlobs = [
+  path.join(apiDirectory, "**", "route.ts").replace(/\\/g, "/"),
+  path.join(apiDirectory, "**", "route.js").replace(/\\/g, "/"),
 ];
-
-const projectRoot = resolveProjectRoot();
-const apiRouteFiles = collectApiRouteFiles(path.join(projectRoot, "src", "app", "api"));
-const fallbackGlobs = apiRoutesGlobs.map((glob) => path.join(projectRoot, glob).replace(/\\/g, "/"));
 
 const options: swaggerJSDoc.Options = {
   definition: {
