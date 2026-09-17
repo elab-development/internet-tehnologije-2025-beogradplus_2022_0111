@@ -52,18 +52,28 @@ export default function AdminPage() {
   const [stationIdInput, setStationIdInput] = useState('')
 
   const [updateLinijaSearch, setUpdateLinijaSearch] = useState('')
+  const [updateStanicaSearch, setUpdateStanicaSearch] = useState('')
   const [selectedUpdateLinija, setSelectedUpdateLinija] = useState<Linija | null>(null)
+  const [selectedUpdateStanica, setSelectedUpdateStanica] = useState<Stanica | null>(null)
   const [openUpdateLinijaSearch, setOpenUpdateLinijaSearch] = useState(false)
+  const [openUpdateStanicaSearch, setOpenUpdateStanicaSearch] = useState(false)
   const [updateLinijaStations, setUpdateLinijaStations] = useState<Stanica[]>([])
   const [updateStationIdInput, setUpdateStationIdInput] = useState('')
-  const [updateEditForm, setUpdateEditForm] = useState({
+  const [updateEditLinijaForm, setUpdateEditLinijaForm] = useState({
     broj: '',
     tip: 1,
     ime_linije: '',
     aktivna: true
   })
+  const [updateEditStanicaForm, setUpdateEditStanicaForm] = useState({
+    naziv: '',
+    lat: '',
+    lng: '',
+    aktivna: true
+  })
   const [isLoadingUpdate, setIsLoadingUpdate] = useState(false)
   const updateLinijaSearchRef = useRef<HTMLDivElement>(null)
+  const updateStanicaSearchRef = useRef<HTMLDivElement>(null)
 
   const [updateSmer, setUpdateSmer] = useState<number>(0)
   const [updateSmerNazivi, setUpdateSmerNazivi] = useState<{ smer: number, naziv: string }[]>([])
@@ -186,6 +196,9 @@ export default function AdminPage() {
       }
       if (updateLinijaSearchRef.current && !updateLinijaSearchRef.current.contains(event.target as Node)) {
         setOpenUpdateLinijaSearch(false)
+      }
+      if (updateStanicaSearchRef.current && !updateStanicaSearchRef.current.contains(event.target as Node)) {
+        setOpenUpdateStanicaSearch(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -483,7 +496,7 @@ export default function AdminPage() {
         return
       }
 
-      setUpdateEditForm({
+      setUpdateEditLinijaForm({
         broj: linija.broj,
         tip: linija.tip,
         ime_linije: linija.ime_linije,
@@ -602,7 +615,7 @@ export default function AdminPage() {
       return
     }
 
-    if (!updateEditForm.broj || !updateEditForm.ime_linije) {
+    if (!updateEditLinijaForm.broj || !updateEditLinijaForm.ime_linije) {
       setPoruka('Popunite validne podatke za liniju')
       return
     }
@@ -614,7 +627,7 @@ export default function AdminPage() {
         return
       }
 
-      const tipCode = updateEditForm.tip
+      const tipCode = updateEditLinijaForm.tip
 
       const res = await fetch(`/api/lines`, {
         method: 'PUT',
@@ -624,10 +637,10 @@ export default function AdminPage() {
         },
         body: JSON.stringify({
           linija_id: selectedUpdateLinija.linija_id,
-          broj: updateEditForm.broj,
+          broj: updateEditLinijaForm.broj,
           tip: tipCode,
-          ime_linije: updateEditForm.ime_linije,
-          aktivna: updateEditForm.aktivna,
+          ime_linije: updateEditLinijaForm.ime_linije,
+          aktivna: updateEditLinijaForm.aktivna,
           stanice: updateLinijaStations.map(s => s.stanica_id),
           smer: updateSmer
         })
@@ -668,10 +681,109 @@ export default function AdminPage() {
     setUpdateStationIdInput('')
     setUpdateSmer(0)
     setUpdateSmerNazivi([])
-    setUpdateEditForm({
+    setUpdateEditLinijaForm({
       broj: '',
       tip: 1,
       ime_linije: '',
+      aktivna: true
+    })
+  }
+
+  const handleSelectUpdateStanica = (stanica: Stanica) => {
+    setSelectedUpdateStanica(stanica)
+    setUpdateStanicaSearch(stanica.naziv)
+    setUpdateEditStanicaForm({
+      naziv: stanica.naziv,
+      lat: String(stanica.lat),
+      lng: String(stanica.lng),
+      aktivna: stanica.aktivna
+    })
+    setOpenUpdateStanicaSearch(false)
+  }
+
+  const updateStanica = async () => {
+    if (!selectedUpdateStanica) {
+      setPoruka('Prvo odaberite stanicu')
+      return
+    }
+
+    const naziv = updateEditStanicaForm.naziv.trim()
+    const lat = Number(updateEditStanicaForm.lat)
+    const lng = Number(updateEditStanicaForm.lng)
+
+    if (
+      !naziv ||
+      !updateEditStanicaForm.lat.trim() ||
+      !updateEditStanicaForm.lng.trim() ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      setPoruka('Popunite validne podatke za stanicu')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setPoruka('Niste ulogovani')
+        return
+      }
+
+      const res = await fetch('/api/stations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          stanica_id: selectedUpdateStanica.stanica_id,
+          naziv,
+          lat,
+          lng,
+          aktivna: updateEditStanicaForm.aktivna
+        })
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setPoruka(data.error || 'Greška pri ažuriranju stanice')
+        return
+      }
+
+      setPoruka('Stanica uspešno ažurirana')
+      const refreshRes = await fetch('/api/stations', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (refreshRes.ok) {
+        const refreshed = await refreshRes.json()
+        setStanice(refreshed)
+        const updatedStanica = refreshed.find(
+          (stanica: Stanica) => stanica.stanica_id === selectedUpdateStanica.stanica_id
+        )
+        if (updatedStanica) {
+          setSelectedUpdateStanica(updatedStanica)
+          setUpdateStanicaSearch(updatedStanica.naziv)
+          setUpdateEditStanicaForm({
+            naziv: updatedStanica.naziv,
+            lat: String(updatedStanica.lat),
+            lng: String(updatedStanica.lng),
+            aktivna: updatedStanica.aktivna
+          })
+        }
+      }
+    } catch {
+      setPoruka('Greška pri ažuriranju stanice')
+    }
+  }
+
+  const resetUpdateStanicaForm = () => {
+    setSelectedUpdateStanica(null)
+    setUpdateStanicaSearch('')
+    setOpenUpdateStanicaSearch(false)
+    setUpdateEditStanicaForm({
+      naziv: '',
+      lat: '',
+      lng: '',
       aktivna: true
     })
   }
@@ -688,6 +800,10 @@ export default function AdminPage() {
   const filteredUpdateLinije = linije.filter(l =>
     l.broj.toLowerCase().includes(updateLinijaSearch.toLowerCase()) ||
     l.ime_linije.toLowerCase().includes(updateLinijaSearch.toLowerCase())
+  )
+
+  const filteredUpdateStanice = stanice.filter(stanica =>
+    stanica.naziv.toLowerCase().includes(updateStanicaSearch.toLowerCase())
   )
 
   if (loading) {
@@ -1151,8 +1267,8 @@ export default function AdminPage() {
                             <div className="mb-2">
                               <label className="form-label" style={{ fontSize: '0.85rem' }}>Broj linije</label>
                               <input
-                                value={updateEditForm.broj}
-                                onChange={e => setUpdateEditForm({ ...updateEditForm, broj: e.target.value })}
+                                value={updateEditLinijaForm.broj}
+                                onChange={e => setUpdateEditLinijaForm({ ...updateEditLinijaForm, broj: e.target.value })}
                                 className="form-control form-control-sm"
                                 placeholder="Broj linije"
                               />
@@ -1161,8 +1277,8 @@ export default function AdminPage() {
                             <div className="mb-2">
                               <label className="form-label" style={{ fontSize: '0.85rem' }}>Ime linije</label>
                               <input
-                                value={updateEditForm.ime_linije}
-                                onChange={e => setUpdateEditForm({ ...updateEditForm, ime_linije: e.target.value })}
+                                value={updateEditLinijaForm.ime_linije}
+                                onChange={e => setUpdateEditLinijaForm({ ...updateEditLinijaForm, ime_linije: e.target.value })}
                                 className="form-control form-control-sm"
                                 placeholder="Ime linije"
                               />
@@ -1171,8 +1287,8 @@ export default function AdminPage() {
                             <div className="mb-3">
                               <label className="form-label" style={{ fontSize: '0.85rem' }}>Tip</label>
                               <select
-                                value={updateEditForm.tip}
-                                onChange={e => setUpdateEditForm({ ...updateEditForm, tip: Number(e.target.value) })}
+                                value={updateEditLinijaForm.tip}
+                                onChange={e => setUpdateEditLinijaForm({ ...updateEditLinijaForm, tip: Number(e.target.value) })}
                                 className="form-select form-select-sm"
                               >
                                 <option value={1}>Autobus</option>
@@ -1186,8 +1302,8 @@ export default function AdminPage() {
                                 className="form-check-input"
                                 type="checkbox"
                                 id="aktivnaLinijaUpdate"
-                                checked={updateEditForm.aktivna}
-                                onChange={e => setUpdateEditForm({ ...updateEditForm, aktivna: e.target.checked })}
+                                checked={updateEditLinijaForm.aktivna}
+                                onChange={e => setUpdateEditLinijaForm({ ...updateEditLinijaForm, aktivna: e.target.checked })}
                               />
                               <label className="form-check-label" htmlFor="aktivnaLinijaUpdate" style={{ fontSize: '0.9rem' }}>
                                 Aktivna
@@ -1287,8 +1403,134 @@ export default function AdminPage() {
             </div>
 
             <div className="row g-3 mb-2" style={{ position: 'relative', zIndex: 49 }}>
-              <div className="col-md-6" style={{ position: 'relative', zIndex: 49 }}>
-                <Bubble padding="sm" opacity={0.9}>
+              <div className="col-md-6 d-flex" style={{ position: 'relative', zIndex: 50 }}>
+                <Bubble padding="sm" opacity={0.9} className="h-100 w-100">
+                  <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Ažuriraj stanicu</h5>
+
+                  <div ref={updateStanicaSearchRef} style={{ position: 'relative', zIndex: 9999 }}>
+                    <div className="input-group input-group-sm mb-2">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Pretraži stanice..."
+                        value={updateStanicaSearch}
+                        onChange={e => setUpdateStanicaSearch(e.target.value)}
+                      />
+                      <button
+                        className="btn btn-outline-secondary"
+                        type="button"
+                        onClick={() => setOpenUpdateStanicaSearch(true)}
+                        aria-label="Pretraži stanice"
+                      >
+                        🔍
+                      </button>
+                    </div>
+
+                    {openUpdateStanicaSearch && updateStanicaSearch && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '40px',
+                        left: 0,
+                        width: '100%',
+                        maxHeight: 250,
+                        background: 'white',
+                        borderRadius: 8,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+                        overflowY: 'auto',
+                        zIndex: 9999
+                      }}>
+                        <div className="p-2 fw-bold border-bottom" style={{ fontSize: '0.85rem' }}>
+                          {filteredUpdateStanice.length} rezultata
+                        </div>
+                        {filteredUpdateStanice.length > 0 ? (
+                          filteredUpdateStanice.map(stanica => (
+                            <StationItem
+                              key={stanica.stanica_id}
+                              stanica={stanica}
+                              onClick={() => handleSelectUpdateStanica(stanica)}
+                            />
+                          ))
+                        ) : (
+                          <div className="p-2 text-muted" style={{ fontSize: '0.85rem' }}>Nema rezultata</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedUpdateStanica && (
+                    <>
+                      <div className="alert alert-info p-2 mb-2" style={{ fontSize: '0.85rem' }}>
+                        Uređujete: <strong>{selectedUpdateStanica.naziv}</strong> (ID: {selectedUpdateStanica.stanica_id})
+                      </div>
+
+                      <div className="row g-2">
+                        <div className="col-12">
+                          <label className="form-label" style={{ fontSize: '0.85rem' }}>Naziv stanice</label>
+                          <input
+                            value={updateEditStanicaForm.naziv}
+                            onChange={e => setUpdateEditStanicaForm({ ...updateEditStanicaForm, naziv: e.target.value })}
+                            className="form-control form-control-sm"
+                            placeholder="Naziv stanice"
+                          />
+                        </div>
+
+                        <div className="col-sm-6">
+                          <label className="form-label" style={{ fontSize: '0.85rem' }}>Lat</label>
+                          <input
+                            type="number"
+                            step="any"
+                            value={updateEditStanicaForm.lat}
+                            onChange={e => setUpdateEditStanicaForm({ ...updateEditStanicaForm, lat: e.target.value })}
+                            className="form-control form-control-sm"
+                            placeholder="Lat"
+                          />
+                        </div>
+
+                        <div className="col-sm-6">
+                          <label className="form-label" style={{ fontSize: '0.85rem' }}>Lng</label>
+                          <input
+                            type="number"
+                            step="any"
+                            value={updateEditStanicaForm.lng}
+                            onChange={e => setUpdateEditStanicaForm({ ...updateEditStanicaForm, lng: e.target.value })}
+                            className="form-control form-control-sm"
+                            placeholder="Lng"
+                          />
+                        </div>
+
+                        <div className="col-12">
+                          <div className="form-check form-switch mb-1">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="aktivnaStanicaUpdate"
+                              checked={updateEditStanicaForm.aktivna}
+                              onChange={e => setUpdateEditStanicaForm({ ...updateEditStanicaForm, aktivna: e.target.checked })}
+                            />
+                            <label className="form-check-label" htmlFor="aktivnaStanicaUpdate" style={{ fontSize: '0.9rem' }}>
+                              Aktivna
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="col-12">
+                          <div className="d-flex gap-2">
+                            <button onClick={updateStanica} className="btn btn-primary btn-sm">
+                              Sačuvaj izmene
+                            </button>
+                            <button onClick={resetUpdateStanicaForm} className="btn btn-outline-secondary btn-sm">
+                              Otkaži
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </Bubble>
+              </div>
+
+              <div className="col-md-6 d-flex" style={{ position: 'relative', zIndex: 49 }}>
+                <Bubble padding="sm" opacity={0.9} className="h-100 w-100">
                   <h5 className="fw-bold mb-3" style={{ fontSize: '1rem' }}>Upravljanje ulogama</h5>
                   <div className="row g-2">
                     <div className="col-12">
