@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isRegister, setIsRegister] = useState(false);
 
+  function resetChatSession() {
+    sessionStorage.clear();
+  }
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -45,11 +49,12 @@ export default function LoginPage() {
         return;
       }
 
+      resetChatSession();
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.korisnik));
       localStorage.setItem("auth", "true");
 
-      router.push("/");
+      window.location.assign("/");
     } catch (err) {
       console.error(err);
       setError("Greška pri povezivanju sa serverom");
@@ -129,11 +134,12 @@ export default function LoginPage() {
         return;
       }
 
+      resetChatSession();
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.korisnik));
       localStorage.setItem("auth", "true");
 
-      router.push("/");
+      window.location.assign("/");
     } catch (err) {
       console.error(err);
       setError("Greška pri povezivanju sa serverom");
@@ -162,11 +168,12 @@ export default function LoginPage() {
         return;
       }
 
+      resetChatSession();
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.korisnik));
       localStorage.setItem("auth", "true");
 
-      router.push("/");
+      window.location.assign("/");
     } catch (err) {
       console.error(err);
       setError("Greška pri povezivanju sa serverom");

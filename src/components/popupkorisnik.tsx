@@ -78,8 +78,9 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef, onOpenFavor
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    sessionStorage.removeItem('auth');
-    router.push('/login');
+    localStorage.removeItem('auth');
+    sessionStorage.clear();
+    window.location.assign('/login');
   };
 
   const handleLogin = () => {
