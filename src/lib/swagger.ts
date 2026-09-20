@@ -37,9 +37,9 @@ const options: swaggerJSDoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "BeogradPlus API",
+      title: "BeogradBus API",
       version: "1.0.0",
-      description: "Zvanicna API dokumentacija za BeogradPlus.",
+      description: "Zvanicna API dokumentacija za BeogradBus.",
     },
     servers: [
       {

@@ -227,7 +227,7 @@ export default function DocsPage() {
                     <div>
                       <h1 className="h2 fw-bold mb-2 text-dark">API Dokumentacija</h1>
                       <p className="mb-0 text-secondary">
-                        Interaktivni pregled svih endpointa, parametara i odgovora za BeogradPlus API.
+                        Interaktivni pregled svih endpointa, parametara i odgovora za BeogradBus API.
                       </p>
                     </div>
                     <div className="d-flex gap-2">

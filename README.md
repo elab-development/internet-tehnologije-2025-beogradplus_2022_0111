@@ -1,7 +1,7 @@
-# BeogradPlus
+# BeogradBus
 
 ## Opis aplikacije
-BeogradPlus je web aplikacija za pregled i upravljanje gradskim prevozom u Beogradu.  
+BeogradBus je web aplikacija za pregled i upravljanje gradskim prevozom u Beogradu.  
 Sadrzi rad sa stanicama i linijama, prijavu/registraciju korisnika, omiljene linije i stanice, kao i admin funkcionalnosti.  
 API dokumentacija je dostupna kroz Swagger (`/docs`) i OpenAPI JSON (`/api/docs`).
 

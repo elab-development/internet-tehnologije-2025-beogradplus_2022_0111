@@ -215,7 +215,7 @@ export default function LoginPage() {
               WebkitTextFillColor: "transparent",
               backgroundClip: "text"
             }}>
-              BeogradPlus
+              BeogradBus
             </h1>
             <p className="text-muted mb-0">{isRegister ? "Kreirajte nalog" : "Dobrodošli nazad"}</p>
           </div>

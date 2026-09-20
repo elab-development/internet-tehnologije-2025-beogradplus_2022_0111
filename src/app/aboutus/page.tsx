@@ -56,7 +56,7 @@ export default function AboutUs() {
             <div className="row justify-content-center mb-5">
               <div className="col-lg-8 text-center">
                 <h1 className="display-4 fw-bold mb-4 text-dark">
-                  O <span className="text-dark fw-bolder">Beograd-Plus</span>
+                  O <span className="text-dark fw-bolder">BeogradBus</span>
                 </h1>
                 <p className="lead mb-4 text-dark fw-normal" style={{
                   maxWidth: "800px",
@@ -73,7 +73,7 @@ export default function AboutUs() {
                 <Bubble padding="md" opacity={0.7} className="text-center">
                   <h2 className="h3 fw-bold mb-3 text-dark">Naša Misija</h2>
                   <p className="mb-0 text-dark fs-5">
-                    BeogradPlus je kreiran da pojednostavi svakodnevno korišćenje gradskog prevoza. Sve linije, stanice i rute – jasno, brzo i pouzdano.
+                    BeogradBus je kreiran da pojednostavi svakodnevno korišćenje gradskog prevoza. Sve linije, stanice i rute – jasno, brzo i pouzdano.
                   </p>
                 </Bubble>
               </div>

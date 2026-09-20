@@ -56,7 +56,7 @@ export default function Sidebar({ onOpenFavorites }: SidebarProps) {
                         userSelect: "none"
                     }}
                 >
-                    BeogradPlus
+                    BeogradBus
                 </span>
 
                 <nav style={{ display: "flex", gap: "6px" }}>
