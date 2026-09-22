@@ -41,16 +41,28 @@ export default function Home() {
     const script1 = document.createElement('script');
     script1.id = 'botpress-webchat-script';
     script1.src = 'https://cdn.botpress.cloud/webchat/v5.0/inject.js';
+    
+    let script2: HTMLScriptElement | null = null;
+
     script1.onload = () => {
       if (document.getElementById('botpress-config-script')) return;
 
-      const script2 = document.createElement('script');
+      script2 = document.createElement('script');
       script2.id = 'botpress-config-script';
       script2.src = 'https://files.bpcontent.cloud/2026/09/17/19/20260917191219-Z6R4C8R8.js';
       script2.async = true;
       document.body.appendChild(script2);
     };
     document.body.appendChild(script1);
+
+    return () => {
+    if (script1 && document.body.contains(script1)) {
+      document.body.removeChild(script1);
+    }
+    if (script2 && document.body.contains(script2)) {
+      document.body.removeChild(script2);
+    }
+  };
   }, []);
   useEffect(() => {
     const fetchStanice = async () => {

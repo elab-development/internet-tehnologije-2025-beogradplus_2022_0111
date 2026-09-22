@@ -339,7 +339,7 @@ export default function PopupKorisnik({ isOpen, onClose, triggerRef, onOpenFavor
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(253, 160, 133, 0.3)';
                 }}
               >
-                <span>⭐</span> Omiljeno
+                Omiljeno
               </button>
 
               {korisnik?.uloga_id === 2 && (
